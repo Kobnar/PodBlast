@@ -1,2 +1,9 @@
 MBMBaM: http://feeds.feedburner.com/mbmbam
 Radiolab: http://feeds.wnyc.org/radiolab
+
+Test Startup:
+
+from podblast import *
+test = PodBlast()
+test.register_feed("http://feeds.feedburner.com/mbmbam")
+test.register_feed("http://feeds.wnyc.org/radiolab")
