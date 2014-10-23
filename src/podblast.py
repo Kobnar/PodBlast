@@ -121,7 +121,7 @@ class Database(object):
             #     self.valid = False
             #     self.subscribed = False
             # Defines url regardless:
-            self.url = feed_url
+                self.url = feed_url
 
     #--------------------------------------------------------------------------#
     #     The following three methods load data from the program's various
@@ -134,7 +134,7 @@ class Database(object):
             media_reader = csv.reader(csvfile) #Database.CSVReader(csvfile).reader
             media_content = []
             (media_content.append({ 'url': url }) for url in
-                (media[1] for row in media_reader if row[0] is episode_url))
+                [media[1] for row in media_reader if row[0] is episode_url])
             return media_content
 
     # Loads all of the episodes of a given feed:
@@ -142,27 +142,30 @@ class Database(object):
         with open('episodes.csv', 'rb') as csvfile:
             episode_reader = csv.reader(csvfile) #Database.CSVReader(csvfile).reader
             entries = []
-            for row in (rows for row in episode_reader if row[0] is feed_url):
-                source = Database.LDEpisodeSource(row)
-                episode_url = row[1]
-                source.media_content = self.load_media(episode_url)
-                entries.append(
-                    Episode(source)
-                    )
+            for row in episode_reader:
+                print ("Loading: " + row[0] + " == " + feed_url)
+                if row[0] == feed_url:
+                    source = Database.LDEpisodeSource(row)
+                    episode_url = row[1]
+                    source.media_content = self.load_media(episode_url)
+                    entries.append(
+                        Episode(source)
+                        )
             return entries
 
     # Loads all of the feeds which have been saved by the user:
     def load_feeds(self):
         with open('feeds.csv', 'rb') as csvfile:
             feed_reader = csv.reader(csvfile) #Database.CSVReader(csvfile).reader
+            feeds = []
             for row in feed_reader:
                 feed_url = row[0]
                 source = Database.LDFeedSource(row)
                 source.entries = self.load_episodes(feed_url)
-                self.feeds.append(
+                feeds.append(
                     Feed(source)
                     )
-                print (self.feeds)
+            return feeds
 
     #--------------------------------------------------------------------------#
     #     The following three methods save the program's current data
