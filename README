@@ -3,16 +3,14 @@ Radiolab: http://feeds.wnyc.org/radiolab
 
 Test Startup:
 
-from podblast import *
-test = PodBlast()
-test.register_feed("http://feeds.feedburner.com/mbmbam")
-test.register_feed("http://feeds.wnyc.org/radiolab")
+import src.podblast
+blaster = src.podblast.PodBlast()
 
+blaster.set(0,0)
+blaster.next()
 
-These are critical repos to run on OSX:
-https://github.com/sampsyo/homebrew-py
-https://github.com/Homebrew/homebrew-versions
+blaster.register_feed("http://feeds.feedburner.com/mbmbam")
+blaster.register_feed("http://feeds.wnyc.org/radiolab")
 
-NOTES:
-- gstreamer and all gtk-plugins-* have been installed with homebrew
-- pygtk was installed using macports (probably broke something)
+blaster.save()
+ext

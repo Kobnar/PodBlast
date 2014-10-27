@@ -40,17 +40,17 @@ class GTKInterface(object):
     backend as a collection of python objects. It also provides a collection of
     methods to handle signals from the frontend.
     """
-
     def __init__(self):
+        print ("Initializing GTK/Glade interface.")
         #--------- -- -- - - -- -  -   -  -      -  -      -
         # User Interface Construction:
         #--------- -- -- - - -- -  -   -  -      -  -      -
 
         # Define the location of our glade interface file as 'ux_source' and
         # set up the GTK builder to grab objects and signals from that file:
-        ux_source = "ux/podblast_ux.glade"
-        gtk_builder = gtk.Builder()
-        gtk_builder.add_from_file(self.ux_source)
+        self.ux_source = "ux/podblast_ux.glade"
+        self.gtk_builder = gtk.Builder()
+        self.gtk_builder.add_from_file(self.ux_source)
 
         # Get the window/dialog objects:
         self.main_window = self.gtk_builder.get_object("MainWindow")
@@ -117,106 +117,94 @@ class GTKInterface(object):
         self.confirm_diag_cancel_button = self.gtk_builder.get_object("ConfirmDiagCancel")
 
     #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Window Handling:
+    # Core Generation and Termination:
     #--------- -- -- - - -- -  -   -  -      -  -      -
 
-    def onDeleteMainWindow(self, *args):
-        # Stop, save and quit:
-        self.save_feeds()
-        self.pb.ux.end_program(*args)
+    def end_program (self, *args):
+        gtk.main_quit(*args)
 
-    def onDeleteAddFeedDiag(self, *args):
-        self.close_add_feed_diag()
-        return True
-
-    def close_add_feed_diag(self):
-        # Close dialogue and empty fields:
-        self.pb.ux.add_feed_diag.hide()
-        self.pb.ux.ap_url_entry.set_text("")
-
-    def onDeleteErrDiag(self, *args):
-        self.pb.ux.err_diag.hide()
-        self.pb.ux.err_diag_label.set_text("")
-        return True
+    def throw_err_diag(self, err_diag_text):
+        self.err_diag_label.set_text(err_diag_text)
+        self.err_diag.show()
 
     #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Player Controls:
+    # User Interface Updates, Refreshes and Stuffs:
     #--------- -- -- - - -- -  -   -  -      -  -      -
 
-    def onPlayPress(self, button):
-        self.play_pause()
+    def refresh_subscr_list (self):
+        # Clears existing subscription list and builds a new one from scratch.
+        self.subscr_list.clear()
+        i = 0
+        for subscr in self.pb.data.db["subscriptions"]:
+            feed_pkid = subscr["feed_pkid"]
+            if subscr["active"] is True:
+                feed_url = self.pb.data.db["feeds"][feed_pkid]["url"]
+                feed_title = self.pb.data.db["feeds"][feed_pkid]["title"]
+                feed_desc = self.pb.data.db["feeds"][feed_pkid]["desc"]
+                self.subscr_list.append([i, feed_pkid, feed_title, feed_url, feed_desc, 0])
+            i += 1
 
-    def onStopPress(self, button):
-        self.stop()
+    def refresh_window_title (self):
+        if self.pb.state.active_feed_title == None:
+            self.main_window.set_title("PodBlast")
+        elif self.pb.state.active_episode_title == None:
+            self.main_window.set_title("PodBlast [" + self.pb.state.active_feed_title + "]")
+        else:
+            self.main_window.set_title("PodBlast [" + self.pb.state.active_episode_feed_title + " - " + self.active_episode_title + "]")
+        # DEBUG INFO:
+        # print ("[" + str(self.active_feed_pkid) + ", " + str(self.active_episode_pkid )+ "]")
 
-    # def onPrevPress(self, button):
-    #   state.player.prev()
+    def refresh_player_buttons_null (self):
+            self.play_img.set_from_stock(gtk.STOCK_MEDIA_PLAY, 4)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(False)
 
-    # def onNextPress(self, button):
-    #   state.player.next()
+    def refresh_player_buttons_ready (self):
+            self.play_img.set_from_stock(gtk.STOCK_MEDIA_PLAY, 4)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(False)
 
-    # def onRwndPress(self, button):
-    #   state.player.rwnd()
+    def refresh_player_buttons_paused (self):
+            self.play_img.set_from_stock(gtk.STOCK_MEDIA_PLAY, 4)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(True)
 
-    # def onFfwdPress(self, button):
-    #   state.player.ffwd()
+    def refresh_player_buttons_playing (self):
+            self.play_img.set_from_stock(gtk.STOCK_MEDIA_PAUSE, 4)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(True)
 
-    # def onMovePlayMeter(self, hscale):
-
-    #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Feed Subscription Management:
-    #--------- -- -- - - -- -  -   -  -      -  -      -
-
-    def onAddFeed(self, button):
-        self.pb.ux.add_feed_diag.show()
-
-    def onAddFeedCancel(self, button):
-        self.close_add_feed_diag()
-
-    def onAddFeedAdd(self, button):
-        subscribed = self.subscribe_feed()
-        if subscribed == True:
-            self.close_add_feed_diag()
-
-    def onDeleteFeed(self, button):
-        self.unsubscribe_feed()
-
-    def onFeedActivate(self, treeview, iter, tvc):
-        self.pb.feed_manager.activate()
-
-    def onFeedRightClick(self, treeview, event):
-        if event.button == 3:
-            x = int(event.x)
-            y = int(event.y)
-            time = event.time
-            pthinfo = treeview.get_path_at_pos(x, y)
-            if pthinfo is not None:
-                path, col, cellx, celly = pthinfo
-                treeview.grab_focus()
-                treeview.set_cursor( path, col, 0)
-                self.pb.ux.feed_menu_split.set_visible(True)
-                self.pb.ux.feed_menu_edit.set_visible(True)
-                self.pb.ux.feed_menu_del.set_visible(True)
-                self.pb.ux.feed_menu.popup( None, None, None, event.button, time)
-            else:
-                self.pb.ux.feed_menu_split.set_visible(False)
-                self.pb.ux.feed_menu_edit.set_visible(False)
-                self.pb.ux.feed_menu_del.set_visible(False)
-                self.pb.ux.feed_menu.popup( None, None, None, event.button, time)
-            return True
-
-    def onFeedRefresh (self, button):
-        print ("Feed refresh not yet implimented.")
 
     #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Episode Management:
+    # User Interface Refreshments:
     #--------- -- -- - - -- -  -   -  -      -  -      -
 
-    def onEpisodeActivate (self, treeview, iter, tvc):
-        self.pb.episode_manager.activate()
+    def update_feed_actvtn (self, feed_pkid):
 
-    def onEpisodeRefreshClicked (self, button):
-        print ("Episode refresh not yet implimented.")
+        # Update states:
+        self.active_feed_pkid = self.pb.data.db["subscriptions"][feed_pkid]["feed_pkid"]
+        self.active_feed_title = self.pb.data.db["feeds"][feed_pkid]["title"]
+        self.active_feed_url = self.pb.data.db["feeds"][feed_pkid]["url"]
+        # self.active_episode_pkid = None
+        # self.active_episode_title = None
+        # Clear and repopulate 'ux.episode_list':
+        self.episode_list.clear()
+        i = 0
+        for episode in self.pb.data.db["episodes"]:
+            if episode["feed_pkid"] == self.active_feed_pkid:
+                self.episode_list.append([i, episode["title"], episode["desc"], 0])
+            i += 1
+        # Update Active Feed label:
+        self.active_feed_label.set_text(self.active_feed_title + "  [" + self.active_feed_url + "]")
+        # Refresh the title bar:
+        self.refresh_window_title()
+
+    def update_episode_actvtn (self, episode_pkid):
+        # Update active feed status:
+        self.active_episode_pkid = episode_pkid
+        self.pb.state.active_episode_title = self.pb.data.db["episodes"][episode_pkid]["title"]
+        # Refresh the title bar:
+        self.refresh_window_title()
 
 #------------------------------------------------------------------------------#
 
@@ -292,7 +280,7 @@ class FeedManager (TVManager):
         # Update user interface:
         self.ux_activate()
         # Update active feed status:
-        self.pb.ux.update_feed_actvtn(self.active_row.pkid)
+        self.update_feed_actvtn(self.active_row.pkid)
 
 
     ## !!! Dead code? !!!
@@ -322,7 +310,7 @@ class FeedManager (TVManager):
             r'(?:/?|[/?]\S+)$', re.IGNORECASE)
         feed_url = re.match(regex_url, feed_url)
         if feed_url == None:
-            self.pb.ux.throw_err_diag("Invalid URL.")
+            self.throw_err_diag("Invalid URL.")
             return feed_url
         else:
             return feed_url.group(0)
@@ -330,28 +318,28 @@ class FeedManager (TVManager):
     def subscribe (self):
         # Get and validate data from user interface:
         feed_url = self.validate_feed_url(
-            self.pb.ux.ap_url_entry.get_text()
+            self.ap_url_entry.get_text()
             )
         feed = self.pb.data.subscribe(feed_url)
         if feed is False:
-            self.pb.ux.throw_err_diag("Feed not recognized.")
+            self.throw_err_diag("Feed not recognized.")
         elif feed is None:
-            self.pb.ux.throw_err_diag("An active subscription with that URL already exists.")
+            self.throw_err_diag("An active subscription with that URL already exists.")
             return False
         else:
-            self.pb.ux.refresh_subscr_list()
+            self.refresh_subscr_list()
             return True
 
     def unsubscribe (self):
         # Get the PKID of the current selection:
         select_iter = self.treeview.get_selection().get_selected()[1]
-        subscr_pkid = self.pb.ux.subscr_treeview.get_model().get_value(select_iter, 0)
+        subscr_pkid = self.subscr_treeview.get_model().get_value(select_iter, 0)
         # Deactivate any active rows:
         self.deactivate()
         # Pass data management to 'state.data':
         self.pb.data.unsubscribe(subscr_pkid)
         # Update the user interface:
-        self.pb.ux.refresh_subscr_list()
+        self.refresh_subscr_list()
 
 
 class EpisodeManager (TVManager):
@@ -367,7 +355,7 @@ class EpisodeManager (TVManager):
         # Update user interface:
         self.ux_activate()
         # Update state:
-        self.pb.ux.update_episode_actvtn(self.active_row.pkid)
+        self.update_episode_actvtn(self.active_row.pkid)
         # Set the new stream url:
         self.pb.player.set(self.pb.data.db["episodes"][self.active_row.pkid]["audio_url"])
         # Start playing podcast:

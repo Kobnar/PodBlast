@@ -20,7 +20,7 @@
 #------------------------------------------------------------------------------#
 
 import pygst
-pygst.require("0.10")
+pygst.require('0.10')
 import gst
 
 #------------------------------------------------------------------------------#
@@ -32,21 +32,23 @@ class Player(object):
     """
 
     def __init__(self):
-        # Instantiates the 'GStreamer' player "engine" and defines the current
+        print ('Initializing GStreamer interface.')
+        # Instantiates the 'GStreamer' player 'engine' and defines the current
         #   output sink as 'pulseaudio':
-        self.engine = gst.element_factory_make("playbin", "player")
+        self.engine = gst.element_factory_make('playbin', 'player')
         self.engine.set_property(
-            "audio-sink",
-            gst.element_factory_make("pulsesink", "pulse"
+            'audio-sink',
+            gst.element_factory_make('pulsesink', 'pulse'
                 )
             )
-        # Instantiates the 'GStreamer' "bus":
+        # Instantiates the 'GStreamer' 'bus':
         bus = self.engine.get_bus()
         bus.enable_sync_message_emission()
         bus.add_signal_watch()
         bus.connect('message', self.gst_message_handler)
         # Defines our own state handler for 'GStreamer':
-        self.player_state = "NULL"
+        self.player_state = 'NULL'
+        self.channel_url = 'NULL'
 
     # Bus message handler (triggers 'refresh_player_state()'):
     def gst_message_handler(self, bus, message):
@@ -57,33 +59,45 @@ class Player(object):
     # Syncs 'player_state' with the GStreamer bus:
     def refresh_player_state (self, state_msg):
         if state_msg == gst.STATE_NULL:
-            self.player_state = "NULL"
+            self.player_state = 'NULL'
         elif state_msg == gst.STATE_READY:
-            self.player_state = "READY"
+            self.player_state = 'READY'
         elif state_msg == gst.STATE_PAUSED:
-            self.player_state = "PAUSED"
+            self.player_state = 'PAUSED'
         elif state_msg == gst.STATE_PLAYING:
-            self.player_state = "PLAYING"
+            self.player_state = 'PLAYING'
 
     # Sets the current channel url:
     def set (self, channel_url):
         self.engine.set_property('uri', channel_url)
+        self.channel_url = channel_url
+        print ('Stream URL set to "' + channel_url + '"')
 
-    # Basic play/pause function based on 'player_state':
+    # Basic play/pause:
     def play_pause (self):
-        if self.player_state is not "PLAYING":
-            self.engine.set_state(gst.STATE_PLAYING)
+        if self.player_state is not 'PLAYING':
+            self.play()
         else:
             self.pause()
 
     # Begins streaming playback:
     def play (self):
-        self.engine.set_state(gst.STATE_PLAYING)
+        if self.channel_url is 'NULL':
+            print ('Please set a media source to stream.')
+        else:
+            self.engine.set_state(gst.STATE_PLAYING)
+            self.player_state = 'PLAYING'
+            print ('Player is now playing. (' + self.player_state + ')')
 
     # Pauses current playback (in-place):
     def pause (self):
         self.engine.set_state(gst.STATE_PAUSED)
+        self.player_state = 'PAUSED'
+        print ('Player is now paused. (' + self.player_state + ')')
 
     # Stops current playback (reset):
     def stop (self):
         self.engine.set_state(gst.STATE_READY)
+        self.player_state = 'READY'
+        self.set('NULL')
+        print ('Player is now stopped. (' + self.player_state + ')')

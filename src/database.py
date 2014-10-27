@@ -19,9 +19,51 @@
 #
 #------------------------------------------------------------------------------#
 
-import csv
 import feedparser
+import json
+import time
 
+#------------------------------------------------------------------------------#
+#     The following class is used as a convenient wrapper to translate Python's
+#   9-Tupile time format into something 'JSON' can handle and back again.
+#------------------------------------------------------------------------------#
+
+class TimeTerp(object):
+    """
+    A simple wrapper to "pack" and "unpack" a Python 9-tuple time variable
+    to/from a python dictionary format that 'JSON' can handle.
+    """
+    @staticmethod
+    def pack_time(timeinfo):
+        return {
+            'tm_year' : timeinfo.tm_year,
+            'tm_mon' : timeinfo.tm_mon,
+            'tm_mday' : timeinfo.tm_mday,
+            'tm_hour' : timeinfo.tm_hour,
+            'tm_min' : timeinfo.tm_min,
+            'tm_sec' : timeinfo.tm_sec,
+            'tm_wday' : timeinfo.tm_wday,
+            'tm_yday' : timeinfo.tm_yday,
+            'tm_isdst' : timeinfo.tm_isdst
+        }
+
+    @staticmethod
+    def unpack_time(timeinfo):
+        return time.struct_time([
+            timeinfo['tm_year'],
+            timeinfo['tm_mon'],
+            timeinfo['tm_mday'],
+            timeinfo['tm_hour'],
+            timeinfo['tm_min'],
+            timeinfo['tm_sec'],
+            timeinfo['tm_wday'],
+            timeinfo['tm_yday'],
+            timeinfo['tm_isdst']
+            ])
+
+#------------------------------------------------------------------------------#
+#     The following two classes are the core data containers for 'Feed' (aka:
+#   "podcast") and 'Episode' data.
 #------------------------------------------------------------------------------#
 
 class Episode(object):
@@ -63,38 +105,41 @@ class Feed(object):
         self.subscribed = feed_source.subscribed
 
 #------------------------------------------------------------------------------#
+#   The following three classes are designed to work around Python's single
+#   constructor limitation by enforcing a uniform input standard for the 'Feed'
+#   and 'Episode' classes.
+#------------------------------------------------------------------------------#
 
 class LDEpisodeSource(object):
     """
-    Accepts data from a row of CSV data and maintains that data for the
-    'Episode' constructor. (Used to workaround Python's single constructor
-    limitation.)
+    Translates data loaded from the program's 'JSON' formatted database so it
+    can be passed to the 'Episode' class in a uniform matter.
     """
-    def __init__(self, csv_row):
+    def __init__(self, source):
         # Loads episode data:
-        self.link = csv_row[1]
-        self.title = csv_row[2]
-        self.description = csv_row[3]
-        self.published_parsed = csv_row[4]
+        self.link = source['url']
+        self.title = source['title']
+        self.description = source['description']
+        self.published_parsed = source['dtg_published']
         self.media_content = []
         # Loads episode metadata:
-        self.downloaded = csv_row[5]
+        self.downloaded = source['downloaded']
 
 
 class LDFeedSource(object):
     """
-    Accepts data from a row of CSV data and maintains that data for the 'Feed'
-    constructor. (Used to workaround Python's single constructor limitation.)
+    Translates data loaded from the program's 'JSON' formatted database so it
+    can be passed to the 'Feed' class in a uniform matter.
     """
-    def __init__(self, csv_row):
+    def __init__(self, source):
         # Loads feed data:
-        self.url = csv_row[0]
-        self.title = csv_row[1]
-        self.description = csv_row[2]
+        self.url = source['url']
+        self.title = source['title']
+        self.description = source['description']
         self.entries = []
         # Loads feed metadata:
-        self.valid = csv_row[3]
-        self.subscribed = csv_row[4]
+        self.valid = source['valid']
+        self.subscribed = source['subscribed']
 
 
 class FHFeedSource(object):
@@ -105,7 +150,7 @@ class FHFeedSource(object):
     """
     def __init__(self, feed_url):
         # Tries to parse the podcast feed, prints error if it fails:
-        try:
+        # try:
             self.url = feed_url
             source = feedparser.parse(feed_url)
             self.title = source.feed.title
@@ -115,140 +160,128 @@ class FHFeedSource(object):
                 entry.downloaded = False
             self.valid = True
             self.subscribed = True
-        except:
-            print ("Failed to parse feed: " + feed_url)
-            self.url = feed_url
-            self.valid = False
-            self.subscribed = False
+        # except:
+        #     print ("Failed to parse feed: " + feed_url)
+        #     self.url = feed_url
+        #     self.valid = False
+        #     self.subscribed = False
 
+#------------------------------------------------------------------------------#
+#     The following class handles all PodBlast's data, including feed
+#   registrations and subscriptions, as well as saving and loading data to
+#   persistant storage.
 #------------------------------------------------------------------------------#
 
 class Database(object):
     """
-    An implementation to save and load data from CSV files, fetch feed data
-    from remote urls, and manage feed subscriptions.
+    An implementation to save and load data from a JSON formatted file, fetch
+    feed data from remote urls, and manage feed registrations/subscriptions.
     """
     def __init__(self):
+        print ("Initializing Database.")
         self.feeds = []
 
-    # Loads all of the media content urls of a given episode:
-    def load_media(self, episode_url):
-        with open('media.csv', 'rb') as csvfile:
-            media_reader = csv.reader(csvfile)
-            media_content = []
-            (media_content.append({ 'url': url }) for url in
-                [media[1] for row in media_reader if row[0] is episode_url])
-            return media_content
+    # Loads data from a 'JSON' formatted database file and reconstructs that
+    # data into 'Feed' and 'Episode' objects:
+    def load(self):
+        loaded = False
+        try:
+            # Open 'JSON' database and load data:
+            with open('data/podblast_db', 'r') as json_file:
+                data_cache = json.load(json_file)
+            loaded = True
+        except:
+            print ("Failed to read database.")
 
-    # Loads all of the episodes of a given feed:
-    def load_episodes(self, feed_url):
-        with open('episodes.csv', 'rb') as csvfile:
-            episode_reader = csv.reader(csvfile)
-            entries = []
-            for row in episode_reader:
-                print ("Loading: " + row[0] + " == " + feed_url)
-                if row[0] == feed_url:
-                    source = LDEpisodeSource(row)
-                    episode_url = row[1]
-                    source.media_content = self.load_media(episode_url)
-                    entries.append(
-                        Episode(source)
+        if loaded:
+            # Reconstruct objects:
+            for feed in data_cache:
+                feed_source = LDFeedSource(feed)
+                for episode in feed['episodes']:
+                    episode['dtg_published'] = TimeTerp.unpack_time(
+                        episode['dtg_published']
                         )
-            return entries
+                    episode_source = LDEpisodeSource(episode)
+                    for media in episode['media']:
+                        episode_source.media_content.append({'url' : media})
+                    feed_source.entries.append(episode_source)
+                self.feeds.append(Feed(feed_source))
 
-    # Loads all of the feeds which have been saved by the user:
-    def load_feeds(self):
-        with open('feeds.csv', 'rb') as csvfile:
-            feed_reader = csv.reader(csvfile)
-            feeds = []
-            for row in feed_reader:
-                feed_url = row[0]
-                source = LDFeedSource(row)
-                source.entries = self.load_episodes(feed_url)
-                feeds.append(
-                    Feed(source)
-                    )
-            return feeds
-
-    # Saves an episode's media urls to a CVS file:
-    def save_media(self, episode):
-        with open('media.csv', 'wb') as csvfile:
-            filewriter = csv.writer(csvfile)
-            for media_url in episode.media:
-                filewriter.writerow([
-                    episode.url,
-                    media_url
-                    ])
-
-    # Saves all of a feed's valid episodes to a CVS file:
-    def save_episodes(self, feed):
-        with open('episodes.csv', 'wb') as csvfile:
-            filewriter = csv.writer(csvfile)
-            for episode in feed.episodes:
-                filewriter.writerow([
-                    feed.url,
-                    episode.url,
-                    episode.title,
-                    episode.description,
-                    episode.dtg_published,
-                    episode.downloaded
-                    ])
-                self.save_media(episode)
-
-    # Saves all registered and valid feeds to a CVS file:
-    def save_feeds(self):
+    # Compiles feed, episode and media data into a monolythic 'JSON' compatible
+    # dictionary so it can be saved to disk;
+    def save(self):
         if self.feeds:
-            with open('feeds.csv', 'wb') as csvfile:
-                filewriter = csv.writer(csvfile)
-                for feed in self.feeds:
-                    if feed.valid:
-                        filewriter.writerow([
-                            feed.url,
-                            feed.title,
-                            feed.description,
-                            feed.valid,
-                            feed.subscribed
-                            ])
-                        self.save_episodes(feed)
+            # Compile a cache of data:
+            data_cache = []
+            for feed in self.feeds:
+                if feed.valid:
+                    feed_cache = {
+                        'url' : feed.url,
+                        'title' : feed.title,
+                        'description' : feed.description,
+                        'episodes': [],
+                        'valid' : feed.valid,
+                        'subscribed' : feed.subscribed
+                        }
+                    for episode in feed.episodes:
+                        episode_cache = {
+                            'url' : episode.url,
+                            'title' : episode.title,
+                            'description' : episode.description,
+                            'media' : [],
+                            'dtg_published' : TimeTerp.pack_time(
+                                episode.dtg_published
+                                ),
+                            'downloaded' : episode.downloaded
+                        }
+                        for media in episode.media:
+                            episode_cache['media'].append(media)
+                        feed_cache['episodes'].append(episode_cache)
+                    data_cache.append(feed_cache)
+
+            try:
+                # Open 'JSON' database and save the cache to disk:
+                with open('data/podblast_db', 'w') as json_file:
+                    json.dump(data_cache, json_file)
+            except:
+                print ("Failed to write database.")
+
         else:
             print ("No feeds to save.")
 
-    # If a feed with the given url is found, sets 'subscribed' to 'True',
-    #   otherwise prints error to console.
+    # Marks a registered feed as 'subscribed':
     def subscribe_feed(self, feed_url):
-        feed_search = [feed for feed in self.feeds if feed.url is feed_url]
-        if feed_search:
-            for feed in feed_search:
+        search_results = [search for search in self.feeds if search.url == feed_url]
+        if search_results:
+            for feed in search_results:
                 feed.subscribed = True
         else:
             print ("Could not find a valid feed to set subscription: " + feed_url)
 
-    # If a feed with the given url is found, sets 'subscribed' to 'False':
+    # Unmarks a registered feed as 'subscribed':
     def unsubscribe_feed(self, feed_url):
-        feed_search = [feed for feed in self.feeds if feed.url is feed_url]
-        if feed_search:
-            for feed in feed_search:
+        search_results = [search for search in self.feeds if search.url == feed_url]
+        if search_results:
+            for feed in search_results:
                 feed.subscribed = False
         else:
             print ("Could not find a valid feed to unset subcription: " + feed_url)
 
-    # Fetches feed data if the given feed_url is not already registered.
+    # Registers a new feed with PodBlast if it has not already been registered:
     def register_feed(self, feed_url):
-        feed_search = [feed for feed in self.feeds if feed.url is feed_url]
-        if feed_search:
+        search_results = [search for search in self.feeds if search.url == feed_url]
+        if search_results:
             print ("Feed already registered: " + feed_url)
         else:
-            # try:
+            try:
                 source = FHFeedSource(feed_url)
                 self.feeds.append(
                     Feed(source)
                     )
-            # except:
-                # print ("Failed to register feed: " + feed_url)
+            except:
+                print ("Failed to register feed: " + feed_url)
 
-    # Deletes any feed objects with a url matching the given 'feed_url':
+    # Deletes a feed from PodBlast's database:
     def delete_feed(self, feed_url):
-        feed_search = [feed for feed in self.feeds if feed.url is feed_url]
-        for feed in (feeds for feed in feed_search if feed_search):
-            feed_index = self.feeds.index(feed)
-            self.feeds.remove(feed_index)
+        for feed in [search for search in self.feeds if search.url == feed_url]:
+            self.feeds.remove(feed)

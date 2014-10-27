@@ -22,21 +22,57 @@
 import database
 import player
 import gtkinterface
+import gtkhandler
 
 #------------------------------------------------------------------------------#
 
-class PodBlast (
-    database.Database,
-    player.Player,
-    gtkinterface.GTKInterface,
-    gtkhandler.GTKSignalHandler ):
+class PodBlast (database.Database, gtkhandler.GTKHandler):
     """
     The "core" PodBlast class with all of the necessary implementatons to fetch
     data from a remote feed, save/load data from CSV files, set and control a
     streaming audio, and interface with the PodBlast GTK/Glade frontend.
     """
     def __init__(self):
-        # try:
-            self.feeds = self.load_feeds()
-        # except:
-        #     print ("Failed to load feeds.")
+        print ("Initializing PodBlast.")
+        database.Database.__init__(self)
+        # gtkinterface.GTKInterface.__init__(self)
+        self.stream = player.Player()
+        # State tracking:
+        self.feed_pkid = None
+        self.episode_pkid = None
+
+    def main (self):
+        self.gtk_builder.connect_signals(self)
+        self.refresh_subscr_list()
+        gtk.main()
+
+    #---------------- ----- --- --- - - - -  -     -
+    # Player controls:
+
+    def set (self, feed_pkid, episode_pkid):
+        self.feed_pkid = feed_pkid
+        self.episode_pkid = episode_pkid
+        self.reset()
+
+    def reset(self):
+        feed = self.feeds[self.feed_pkid]
+        episode = feed.episodes[self.episode_pkid]
+        media_url = episode.media[0]
+        self.stream.stop()
+        self.stream.set(media_url)
+
+    def play_pause (self):
+        self.stream.play_pause()
+
+    def stop (self):
+        self.stream.stop()
+
+    def next (self):
+        self.episode_pkid += 1
+        self.reset()
+        self.play_pause()
+
+    def prev (self):
+        self.episode_pkid -= 1
+        self.reset()
+        self.play_pause()
