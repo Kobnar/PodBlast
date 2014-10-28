@@ -9,11 +9,11 @@ users to subscribe and listen to their favorite feeds.
 
 PodBlast was developed on Gentoo with the following dependencies:
 
- * Python (python-3.4)
- * GTK+ (gtk+-3.12.2)
- * GStreamer (gstreamer-1.2.4-r2)
- * PyGObject Python/GTK bindings (pygobject-3.12.2)
- * GStreamer Python/Gstreamer bindings (gst-python-1.2.1)
+ * **Python** (python-3.4)
+ * **GTK+** (gtk+-3.12.2)
+ * **GStreamer** (gstreamer-1.2.4-r2)
+ * **PyGObject** Python/GTK bindings (pygobject-3.12.2)
+ * **GStreamer** Python/Gstreamer bindings (gst-python-1.2.1)
 
 PodBlast also takes advantage of the following Python libraries:
 
