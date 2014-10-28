@@ -155,3 +155,5 @@ class GTKHandler(object):
                 self.ux.set_player_buttons_paused()
             elif state == 'PLAYING':
                 self.ux.set_player_buttons_playing()
+        else:
+            self.ux.set_player_buttons_null()
