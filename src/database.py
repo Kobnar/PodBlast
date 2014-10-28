@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------#\
 #
-#     Copyright 2014 by Konrad R.K. Ludwig.
+#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
 #
 #     This file is part of PodBlast.
 #
@@ -19,47 +19,10 @@
 #
 #------------------------------------------------------------------------------#
 
-import feedparser
+import feedparser as fdprsr
+fdprsr.PREFERRED_XML_PARSERS.remove('drv_libxml2')  # (FeedParser/Python-3.3 workaround)
 import json
-import time
-
-#------------------------------------------------------------------------------#
-#     The following class is used as a convenient wrapper to translate Python's
-#   9-Tupile time format into something 'JSON' can handle and back again.
-#------------------------------------------------------------------------------#
-
-class TimeTerp(object):
-    """
-    A simple wrapper to "pack" and "unpack" a Python 9-tuple time variable
-    to/from a python dictionary format that 'JSON' can handle.
-    """
-    @staticmethod
-    def pack_time(timeinfo):
-        return {
-            'tm_year' : timeinfo.tm_year,
-            'tm_mon' : timeinfo.tm_mon,
-            'tm_mday' : timeinfo.tm_mday,
-            'tm_hour' : timeinfo.tm_hour,
-            'tm_min' : timeinfo.tm_min,
-            'tm_sec' : timeinfo.tm_sec,
-            'tm_wday' : timeinfo.tm_wday,
-            'tm_yday' : timeinfo.tm_yday,
-            'tm_isdst' : timeinfo.tm_isdst
-        }
-
-    @staticmethod
-    def unpack_time(timeinfo):
-        return time.struct_time([
-            timeinfo['tm_year'],
-            timeinfo['tm_mon'],
-            timeinfo['tm_mday'],
-            timeinfo['tm_hour'],
-            timeinfo['tm_min'],
-            timeinfo['tm_sec'],
-            timeinfo['tm_wday'],
-            timeinfo['tm_yday'],
-            timeinfo['tm_isdst']
-            ])
+from pbutils import pack_time, unpack_time
 
 #------------------------------------------------------------------------------#
 #     The following two classes are the core data containers for 'Feed' (aka:
@@ -152,7 +115,7 @@ class FHFeedSource(object):
         # Tries to parse the podcast feed, prints error if it fails:
         # try:
             self.url = feed_url
-            source = feedparser.parse(feed_url)
+            source = fdprsr.parse(feed_url)
             self.title = source.feed.title
             self.description = source.feed.description
             self.entries = source.entries
@@ -178,8 +141,15 @@ class Database(object):
     feed data from remote urls, and manage feed registrations/subscriptions.
     """
     def __init__(self):
-        print ("Initializing Database.")
+        print ("Initializing Database...")
+
+        # Defines registered feed list:
+        print ("...Creating feed registry.")
         self.feeds = []
+
+        # Loads persistant data from 'JSON' source:
+        print ("...Loading persistant data.")
+        self.load()
 
     # Loads data from a 'JSON' formatted database file and reconstructs that
     # data into 'Feed' and 'Episode' objects:
@@ -198,7 +168,7 @@ class Database(object):
             for feed in data_cache:
                 feed_source = LDFeedSource(feed)
                 for episode in feed['episodes']:
-                    episode['dtg_published'] = TimeTerp.unpack_time(
+                    episode['dtg_published'] = unpack_time(
                         episode['dtg_published']
                         )
                     episode_source = LDEpisodeSource(episode)
@@ -229,7 +199,7 @@ class Database(object):
                             'title' : episode.title,
                             'description' : episode.description,
                             'media' : [],
-                            'dtg_published' : TimeTerp.pack_time(
+                            'dtg_published' : pack_time(
                                 episode.dtg_published
                                 ),
                             'downloaded' : episode.downloaded
@@ -249,39 +219,47 @@ class Database(object):
         else:
             print ("No feeds to save.")
 
-    # Marks a registered feed as 'subscribed':
+    # Marks a registered feed as 'subscribed', returns boolean "success" report:
     def subscribe_feed(self, feed_url):
         search_results = [search for search in self.feeds if search.url == feed_url]
         if search_results:
             for feed in search_results:
                 feed.subscribed = True
+            return True
         else:
             print ("Could not find a valid feed to set subscription: " + feed_url)
+            return False
 
-    # Unmarks a registered feed as 'subscribed':
+    # Unmarks a registered feed as 'subscribed', returns boolean "success" report:
     def unsubscribe_feed(self, feed_url):
         search_results = [search for search in self.feeds if search.url == feed_url]
         if search_results:
             for feed in search_results:
                 feed.subscribed = False
+            return True
         else:
             print ("Could not find a valid feed to unset subcription: " + feed_url)
+            return False
 
-    # Registers a new feed with PodBlast if it has not already been registered:
+    # Registers a new feed with PodBlast if it has not already been registered,
+    # returns boolean "success" report:
     def register_feed(self, feed_url):
         search_results = [search for search in self.feeds if search.url == feed_url]
         if search_results:
             print ("Feed already registered: " + feed_url)
+            return False
         else:
-            try:
+            # try:
                 source = FHFeedSource(feed_url)
                 self.feeds.append(
                     Feed(source)
                     )
-            except:
-                print ("Failed to register feed: " + feed_url)
+                return True
+            # except:
+            #     print ("Failed to register feed: " + feed_url)
+            #     return False
 
-    # Deletes a feed from PodBlast's database:
+    # Deletes a feed from PodBlast's database, returns boolean "success" report:
     def delete_feed(self, feed_url):
         for feed in [search for search in self.feeds if search.url == feed_url]:
             self.feeds.remove(feed)

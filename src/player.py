@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------#\
 #
-#     Copyright 2014 by Konrad R.K. Ludwig.
+#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
 #
 #     This file is part of PodBlast.
 #
@@ -19,9 +19,15 @@
 #
 #------------------------------------------------------------------------------#
 
-import pygst
-pygst.require('0.10')
-import gst
+import sys
+try:
+    # Loading Gst
+    from gi.repository import Gst
+    # GObject.threads_init()
+    Gst.init(None)
+except:
+    print ("Error: Cannot find GStreamer bindings for Python.")
+    sys.exit(1)
 
 #------------------------------------------------------------------------------#
 
@@ -33,39 +39,28 @@ class Player(object):
 
     def __init__(self):
         print ('Initializing GStreamer interface.')
+
         # Instantiates the 'GStreamer' player 'engine' and defines the current
         #   output sink as 'pulseaudio':
-        self.engine = gst.element_factory_make('playbin', 'player')
+        print ('...Creating Gstreamer engine.')
+        self.engine = Gst.ElementFactory.make('playbin', 'player')
         self.engine.set_property(
             'audio-sink',
-            gst.element_factory_make('pulsesink', 'pulse'
+            Gst.ElementFactory.make('pulsesink', 'pulse'
                 )
             )
+
         # Instantiates the 'GStreamer' 'bus':
+        print ('...Creating Gstreamer bus.')
         bus = self.engine.get_bus()
         bus.enable_sync_message_emission()
         bus.add_signal_watch()
-        bus.connect('message', self.gst_message_handler)
+        # bus.connect('message', self.gst_message_handler)
+
+        print ('...Defining custom player state handler.')
         # Defines our own state handler for 'GStreamer':
         self.player_state = 'NULL'
         self.channel_url = 'NULL'
-
-    # Bus message handler (triggers 'refresh_player_state()'):
-    def gst_message_handler(self, bus, message):
-        if message.type == gst.MESSAGE_STATE_CHANGED:
-            old, new, pending = message.parse_state_changed()
-            self.refresh_player_state(new)
-
-    # Syncs 'player_state' with the GStreamer bus:
-    def refresh_player_state (self, state_msg):
-        if state_msg == gst.STATE_NULL:
-            self.player_state = 'NULL'
-        elif state_msg == gst.STATE_READY:
-            self.player_state = 'READY'
-        elif state_msg == gst.STATE_PAUSED:
-            self.player_state = 'PAUSED'
-        elif state_msg == gst.STATE_PLAYING:
-            self.player_state = 'PLAYING'
 
     # Sets the current channel url:
     def set (self, channel_url):
@@ -85,19 +80,25 @@ class Player(object):
         if self.channel_url is 'NULL':
             print ('Please set a media source to stream.')
         else:
-            self.engine.set_state(gst.STATE_PLAYING)
+            self.engine.set_state(Gst.State.PLAYING)
             self.player_state = 'PLAYING'
             print ('Player is now playing. (' + self.player_state + ')')
 
     # Pauses current playback (in-place):
     def pause (self):
-        self.engine.set_state(gst.STATE_PAUSED)
+        self.engine.set_state(Gst.State.PAUSED)
         self.player_state = 'PAUSED'
         print ('Player is now paused. (' + self.player_state + ')')
 
     # Stops current playback (reset):
     def stop (self):
-        self.engine.set_state(gst.STATE_READY)
+        self.engine.set_state(Gst.State.READY)
         self.player_state = 'READY'
-        self.set('NULL')
         print ('Player is now stopped. (' + self.player_state + ')')
+        self.set('NULL')
+
+    def null (self):
+        self.engine.set_state(Gst.State.NULL)
+        self.player_state = 'NULL'
+        self.set('NULL')
+        print ('Player is nullified. (' + self.player_state + ')')

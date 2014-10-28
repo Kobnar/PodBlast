@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------#\
 #
-#     Copyright 2014 by Konrad R.K. Ludwig.
+#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
 #
 #     This file is part of PodBlast.
 #
@@ -19,106 +19,141 @@
 #
 #------------------------------------------------------------------------------#
 
-class GTKHandler:
-    #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Window Handling:
-    #--------- -- -- - - -- -  -   -  -      -  -      -
+import gtkinterface
 
-    def onDeleteMainWindow(self, *args):
-        # Stop, save and quit:
-        self.save_feeds()
-        self.end_program(*args)
+#------------------------------------------------------------------------------#
+# NOTE:
+#     This class handles the signals sent to the PodBlast back-end by its
+#   GTK/Glade front-end. It is not designed to invoke or require any GTK/Glade
+#   libraries. All members/methods requiring GTK/Glade libraries to work are
+#   defined in 'src/gtkinterface.py' and accessed using the user interface
+#   component 'ux'.
+#------------------------------------------------------------------------------#
 
-    def end_program (self, *args):
-        gtk.main_quit(*args)
+class GTKHandler(object):
 
-    def onDeleteAddFeedDiag(self, *args):
-        self.close_add_feed_diag()
-        return True
+    def __init__(self):
+        print ('Initializing GTK signal handler...')
 
-    def close_add_feed_diag(self):
-        # Close dialogue and empty fields:
-        self.add_feed_diag.hide()
-        self.ap_url_entry.set_text("")
+        # Instantiates and connects GTK/Glade user interface component:
+        print ('...Creating user interface coponent.')
+        self.ux = gtkinterface.GTKInterface()
 
-    def onDeleteErrDiag(self, *args):
-        self.err_diag.hide()
-        self.err_diag_label.set_text("")
-        return True
+        print ('...Connecting front-end signals to back-end methods.')
+        # Player controls:
+        self.ux.gtk_builder.connect_signals(self)
 
-    #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Player Controls:
-    #--------- -- -- - - -- -  -   -  -      -  -      -
+    def gtk_main (self):
+        print ('GTK Handler "main" function called.')
+        self.rebuild_feed_list()
+        self.refresh_player_buttons()
+        self.ux.main()
 
-    def onPlayPress(self, button):
-        self.stream.play_pause()
+    # Front-end signal handlers:
 
-    def onStopPress(self, button):
-        self.stream.stop()
+    def on_main_window_delete_event (self, widget, *args):
+        self.stream.null()
+        self.save()
+        self.ux.main_quit()
 
-    def onPrevPress(self, button):
-      state.player.prev()
+    def on_load_menuitem_activate (self, *args):
+        self.load()
 
-    def onNextPress(self, button):
-      state.player.next()
+    def on_save_menuitem_activate (self, *args):
+        self.save()
 
-    # def onRwndPress(self, button):
-    #   state.player.rwnd()
+    def on_feed_combo_changed (self, feed_combo):
+        # Gets 'feed_pkid' from user interface:
+        feed_iter = feed_combo.get_active_iter()
+        feed_model = feed_combo.get_model()
+        feed_pkid = feed_model[feed_iter][0]
 
-    # def onFfwdPress(self, button):
-    #   state.player.ffwd()
+        # Updates state tracker:
+        self.feed_pkid = feed_pkid
+        self.episode_pkid = None
 
-    #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Feed Subscription Management:
-    #--------- -- -- - - -- -  -   -  -      -  -      -
+        # Refreshes episode treeview:
+        self.rebuild_episode_list()
 
-    def onAddFeed(self, button):
-        self.add_feed_diag.show()
+    def on_episode_treeview_cursor_changed (self, *args):
+        # Assume a change means something is selected, which will pass cleanly
+        # to 'self.play()':
+        self.ux.set_player_buttons_ready()
 
-    def onAddFeedCancel(self, button):
-        self.close_add_feed_diag()
+    def on_episode_treeview_row_activated (self, *args):
+        # Get the pkid for the row and update the GUI, states and player:
+        self.episode_pkid = self.ux.get_episode_pkid()
+        self.reset()
+        self.play_pause()
+        self.refresh_player_buttons()
+        self.ux.refresh_episode_list(self.episode_pkid)
 
-    def onAddFeedAdd(self, button):
-        subscribed = self.subscribe_feed()
-        if subscribed == True:
-            self.close_add_feed_diag()
+    def on_play_button_clicked (self, button):
+        print ('"Play" button pressed.')
+        if self.episode_pkid != None:
+            self.play_pause()
+            self.refresh_player_buttons()
+        else:
+            self.episode_pkid = self.ux.get_episode_pkid()
+            self.reset()
+            self.play_pause()
+            self.refresh_player_buttons()
+            self.ux.refresh_episode_list(self.episode_pkid)
 
-    def onDeleteFeed(self, button):
-        self.unsubscribe_feed()
+    def on_stop_button_clicked (self, button):
+        print ('"Stop" button pressed.')
+        self.stop()
+        self.refresh_player_buttons()
+        self.ux.refresh_episode_list(self.episode_pkid)
 
-    def onFeedActivate(self, treeview, iter, tvc):
-        self.pb.feed_manager.activate()
+    def on_next_button_clicked (self, button):
+        print ('"Next" button pressed.')
+        self.next()
+        self.refresh_player_buttons()
+        self.ux.refresh_episode_list(self.episode_pkid)
 
-    def onFeedRightClick(self, treeview, event):
-        if event.button == 3:
-            x = int(event.x)
-            y = int(event.y)
-            time = event.time
-            pthinfo = treeview.get_path_at_pos(x, y)
-            if pthinfo is not None:
-                path, col, cellx, celly = pthinfo
-                treeview.grab_focus()
-                treeview.set_cursor( path, col, 0)
-                self.feed_menu_split.set_visible(True)
-                self.feed_menu_edit.set_visible(True)
-                self.feed_menu_del.set_visible(True)
-                self.feed_menu.popup( None, None, None, event.button, time)
-            else:
-                self.feed_menu_split.set_visible(False)
-                self.feed_menu_edit.set_visible(False)
-                self.feed_menu_del.set_visible(False)
-                self.feed_menu.popup( None, None, None, event.button, time)
-            return True
+    def on_prev_button_clicked (self, button):
+        print ('"Previous" button pressed.')
+        self.prev()
+        self.refresh_player_buttons()
+        self.ux.refresh_episode_list(self.episode_pkid)
 
-    def onFeedRefresh (self, button):
-        print ("Feed refresh not yet implimented.")
+    def on_rwnd_button_clicked (self, button):
+        print ('Rewind feature not implemented yet.')
 
-    #--------- -- -- - - -- -  -   -  -      -  -      -
-    # Episode Management:
-    #--------- -- -- - - -- -  -   -  -      -  -      -
+    def on_ffwd_button_clicked (self, button):
+        print ('Rewind feature not implemented yet.')
 
-    def onEpisodeActivate (self, treeview, iter, tvc):
-        self.pb.episode_manager.activate()
+    # Data management methods:
 
-    def onEpisodeRefreshClicked (self, button):
-        print ("Episode refresh not yet implimented.")
+    def rebuild_feed_list (self):
+        # TODO: Need test to pass subscribed feeds only.
+        feed_titles = []
+        for index, feed in enumerate(self.feeds):
+            feed_titles.append([index, feed.title])
+        self.ux.rebuild_feed_list(feed_titles)
+
+    def rebuild_episode_list (self):
+        episode_input = []
+        for index, episode in enumerate(self.feeds[self.feed_pkid].episodes):
+            self.ux.refresh_episode_list(index)
+            episode_input.append([index, episode.title, 400])
+        self.ux.rebuild_episode_list(episode_input)
+
+    # User interface updates:
+
+    def refresh_player_buttons (self):
+        state = self.stream.player_state
+        if self.feed_pkid == None:
+            self.ux.set_player_buttons_dead()
+        elif self.episode_pkid != None:
+            if state == 'NULL':
+                self.ux.set_player_buttons_null()
+            elif state == 'READY':
+                self.ux.set_player_buttons_ready()
+            elif state == 'PAUSED':
+                self.ux.set_player_buttons_paused()
+            elif state == 'PLAYING':
+                self.ux.set_player_buttons_playing()
+        elif self.episode_cursor_pkid != None:
+            self.ux.set_player_buttons_ready()

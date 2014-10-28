@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------#\
 #
-#     Copyright 2014 by Konrad R.K. Ludwig.
+#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
 #
 #     This file is part of PodBlast.
 #
@@ -23,7 +23,6 @@ import podblast
 
 #------------------------------------------------------------------------------#
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     blaster = podblast.PodBlast()
-    blaster.load()
     blaster.main()

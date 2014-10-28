@@ -1,3 +1,48 @@
+# PodBlast
+## A simple python-based podcast feed tracker.
+
+PodBlast is a simple podcast feed tracker written in python using a GTK/Glade
+front-end interface. It was designed to be lightweight and simple, allowing
+users to subscribe and listen to their favorite feeds.
+
+## Dependencies
+
+PodBlast was developed on Gentoo with the following dependencies:
+
+ * Python (python-3.4)
+ * GTK+ (gtk+-3.12.2)
+ * GStreamer (gstreamer-1.2.4-r2)
+ * PyGObject Python/GTK bindings (pygobject-3.12.2)
+ * GStreamer Python/Gstreamer bindings (gst-python-1.2.1)
+
+PodBlast also takes advantage of the following Python libraries:
+
+ * **System** (sys) to close the program,
+ * **Regex** (re) to parse and verify URLs,
+ * **Time** (time) to prase and convert time and zone information,
+ * **FeedParser** (feedparser) to fetch and parse remote RSS feeds, and
+ * **JSON** (json) to save and load user data.
+
+## Compatibility Notes
+
+Due to the fact that PodBlast requires Python 3, certain compatibility issues
+exist. Of specific note is the workaround to remove 'drv_libxml2' from the
+preferred XML parsers list in 'FeedParser'. This should have no notable effect
+on PodCast's performance.
+
+## Development Notes
+
+For information about working with Python and GTK+ 3, check out the following
+tutorial:
+
+ * http://python-gtk-3-tutorial.readthedocs.org/en/latest/index.html
+
+Here are some valuable references:
+ * **Bold TreeView Rows:** http://stackoverflow.com/questions/8491310/bold-unbold-rows-in-pygtk-treeview
+ * **TreeView Signals:** http://www.pygtk.org/pygtk2tutorial/sec-TreeViewSignals.html
+
+### NOTES
+
 MBMBaM: http://feeds.feedburner.com/mbmbam
 Radiolab: http://feeds.wnyc.org/radiolab
 
