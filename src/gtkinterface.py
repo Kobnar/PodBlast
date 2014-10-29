@@ -23,16 +23,16 @@ import sys
 try:
     from gi.repository import Gtk
 except:
-    print ("Error: Cannot find GTK+ bindings for Python.")
+    print ("Error: Failed to load GTK+ bindings for Python.")
     sys.exit(1)
 
 #------------------------------------------------------------------------------#
 
 class GTKInterface(object):
     """
-    An implementation to link the GTK/Glade user interface with the PodBlast
-    backend as a collection of python objects. It also provides a collection of
-    methods to handle signals from the frontend.
+    An implementation to link the GTK/Glade user interface objects to the
+    PodBlast back-end along with certain methods to get and set user interface
+    data.
     """
     def __init__(self):
         print ('Initializing GTK/Glade interface...')
@@ -46,7 +46,6 @@ class GTKInterface(object):
         print ('...Linking to GTK front-end objects.')
         # Links to main window and dialog window objects:
         self.main_window = self.gtk_builder.get_object('main_window')
-        self.main_window.set_title('PodBlast (v.0.2.1)')
 
         # Links to 'TreeView' and 'ListStore' objects...
         self.feed_treeview = self.gtk_builder.get_object('feed_treeview')
@@ -63,14 +62,17 @@ class GTKInterface(object):
         # self.ffwd_button = self.gtk_builder.get_object('ffwd_button')
         self.next_button = self.gtk_builder.get_object('next_button')
 
+    # Draws all the windows and starts the GTK+ loop:
     def main (self):
         self.main_window.show_all()
         Gtk.main()
 
+    # Stops the GTK+ loop:
     def main_quit (self):
         Gtk.main_quit()
 
-    # Refreshing and managing TreeView data:
+    #---------------- ----- --- --- - - - -  -     -
+    # Refreshing and managing 'TreeView' data:
 
     def rebuild_feed_list (self, feed_titles):
         self.feed_list.clear()
@@ -84,12 +86,21 @@ class GTKInterface(object):
 
     def refresh_episode_list (self, active_episode_pkid = None):
         for episode in self.episode_list:
-            if episode[2] != 400:
-                episode[2] = 400
             if episode[0] == active_episode_pkid:
                 episode[2] = 700
+            else:
+                episode[2] = 400
 
-    # Player button states:
+    def get_feed_pkid (self):
+        feed_iter = self.feed_treeview.get_selection().get_selected()[1]
+        return self.feed_list[feed_iter][0]
+
+    def get_episode_pkid (self):
+        episode_iter = self.episode_treeview.get_selection().get_selected()[1]
+        return self.episode_list[episode_iter][0]
+
+    #---------------- ----- --- --- - - - -  -     -
+    # Setting th player GTK+ button "sensitivity" states:
 
     def set_player_buttons_dead (self):
         self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
@@ -135,13 +146,3 @@ class GTKInterface(object):
         self.stop_button.set_sensitive(True)
         # self.ffwd_button.set_sensitive(True)
         self.next_button.set_sensitive(True)
-
-    # Methods to get information about TreeView data:
-
-    def get_feed_pkid (self):
-        feed_iter = self.feed_treeview.get_selection().get_selected()[1]
-        return self.feed_list[feed_iter][0]
-
-    def get_episode_pkid (self):
-        episode_iter = self.episode_treeview.get_selection().get_selected()[1]
-        return self.episode_list[episode_iter][0]

@@ -23,17 +23,16 @@ import sys
 try:
     # Loading Gst
     from gi.repository import Gst
-    # GObject.threads_init()
     Gst.init(None)
 except:
-    print ("Error: Cannot find GStreamer bindings for Python.")
+    print ("Error: Failed to load GStreamer bindings for Python.")
     sys.exit(1)
 
 #------------------------------------------------------------------------------#
 
 class Player(object):
     """
-    An implementation to stream remote audio with GStreamer. Provides the
+    An implementation to stream remote audio using GStreamer. Provides the
     necessary methods to set a stream's url and control playback.
     """
 
@@ -97,6 +96,7 @@ class Player(object):
         print ('Player is now stopped. (' + self.player_state + ')')
         self.set('NULL')
 
+    # Nullifies the stream (for application shutdown):
     def null (self):
         self.engine.set_state(Gst.State.NULL)
         self.player_state = 'NULL'

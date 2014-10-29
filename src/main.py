@@ -20,9 +20,14 @@
 #------------------------------------------------------------------------------#
 
 import podblast
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)    # Unix signal handler for Gtk.main() interrupt...
 
 #------------------------------------------------------------------------------#
 
+podblast_version = 'v.0.2.1'
+
 if __name__ == '__main__':
     blaster = podblast.PodBlast()
+    blaster.ux.main_window.set_title('PodBlast (' + podblast_version + ')')
     blaster.main()

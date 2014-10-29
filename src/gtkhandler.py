@@ -43,13 +43,14 @@ class GTKHandler(object):
         # Player controls:
         self.ux.gtk_builder.connect_signals(self)
 
+    # Populates all of the GUI data before starting the GTK+ loop:
     def gtk_main (self):
-        print ('GTK Handler "main" function called.')
         self.rebuild_feed_list()
         self.refresh_player_buttons()
         self.ux.main()
 
-    # Front-end signal handlers:
+    #---------------- ----- --- --- - - - -  -     -
+    # Front-end signals:
 
     def on_main_window_delete_event (self, widget, *args):
         self.stream.null()
@@ -89,7 +90,6 @@ class GTKHandler(object):
         self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_play_button_clicked (self, button):
-        print ('"Play" button pressed.')
         if self.episode_pkid != None:
             self.play_pause()
             self.refresh_player_buttons()
@@ -101,30 +101,28 @@ class GTKHandler(object):
             self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_stop_button_clicked (self, button):
-        print ('"Stop" button pressed.')
         self.stop()
         self.refresh_player_buttons()
         self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_next_button_clicked (self, button):
-        print ('"Next" button pressed.')
         self.next()
         self.refresh_player_buttons()
         self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_prev_button_clicked (self, button):
-        print ('"Previous" button pressed.')
         self.prev()
         self.refresh_player_buttons()
         self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_rwnd_button_clicked (self, button):
-        print ('Rewind feature not implemented yet.')
+        print ('Rewind feature not yet implemented.')
 
     def on_ffwd_button_clicked (self, button):
-        print ('Rewind feature not implemented yet.')
+        print ('Rewind feature not yet implemented.')
 
-    # Data management methods:
+    #---------------- ----- --- --- - - - -  -     -
+    # Refreshing/Rebuilding front-end components based on back-end data:
 
     def rebuild_feed_list (self):
         # TODO: Need test to pass subscribed feeds only.
@@ -139,8 +137,6 @@ class GTKHandler(object):
             self.ux.refresh_episode_list(index)
             episode_input.append([index, episode.title, 400])
         self.ux.rebuild_episode_list(episode_input)
-
-    # User interface updates:
 
     def refresh_player_buttons (self):
         state = self.stream.player_state

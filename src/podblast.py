@@ -27,8 +27,8 @@ import gtkhandler
 
 class PodBlast (database.Database, gtkhandler.GTKHandler):
     """
-    The 'core' PodBlast class with all of the necessary implementatons to fetch
-    data from a remote feed, save/load data from CSV files, set and control a
+    The primary PodBlast class with all of the necessary implementatons to fetch
+    data from a remote feed, save/load data using JSON, set and control a
     streaming audio, and interface with the PodBlast GTK/Glade frontend.
     """
     def __init__(self):
@@ -45,13 +45,15 @@ class PodBlast (database.Database, gtkhandler.GTKHandler):
         # Instantiates 'Player' component object:
         self.stream = player.Player()
 
+    # Calls the front-end main function:
     def main (self):
-        print ('PodBlast "main" function called.')
         self.gtk_main()
 
     #---------------- ----- --- --- - - - -  -     -
     # Player controls:
 
+    # Sets the PKID values of the "state tracker" (ie: 'self.feed_pkid' and
+    # 'self.episode_pkid') values:
     def set (self, feed_pkid, episode_pkid):
         max_feed_pkid = len(self.feeds)
         if (feed_pkid != None
@@ -68,6 +70,8 @@ class PodBlast (database.Database, gtkhandler.GTKHandler):
                 self.episode_pkid = episode_pkid
                 self.reset()
 
+    # Stops the current stream, gets the desired URL based on the "state
+    # tracker" and passes that url to the player:
     def reset(self):
         self.stream.stop()
         if (self.feed_pkid != None
@@ -76,15 +80,17 @@ class PodBlast (database.Database, gtkhandler.GTKHandler):
             episode = feed.episodes[self.episode_pkid]
             media_url = episode.media[0]
             self.stream.set(media_url)
-        print (str([self.feed_pkid, self.episode_pkid]))
 
+    # Pauses or plays GStreamer playback based on the current player state:
     def play_pause (self):
         self.stream.play_pause()
 
+    # Stops GStreamer playback and sets the episode tracker to "None":
     def stop (self):
-        self.set(self.feed_pkid, None)
         self.stream.stop()
+        self.set(self.feed_pkid, None)
 
+    # Starts playing the "next" episode in the feed:
     def next (self):
         max_pkid = len(self.feeds[self.feed_pkid].episodes)
         if self.episode_pkid < max_pkid:
@@ -94,6 +100,7 @@ class PodBlast (database.Database, gtkhandler.GTKHandler):
         else:
             print ("Already at the end of the current playlist.")
 
+    # Starts playing the "previous" episode in the feed:
     def prev (self):
         if self.episode_pkid > 0:
             self.episode_pkid -= 1
