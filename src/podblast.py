@@ -25,7 +25,7 @@ import gtkhandler
 
 #------------------------------------------------------------------------------#
 
-class PodBlast (database.Database, gtkhandler.GTKHandler):
+class PodBlast (database.Database):
     """
     The primary PodBlast class with all of the necessary implementatons to fetch
     data from a remote feed, save/load data using JSON, set and control a
@@ -33,68 +33,75 @@ class PodBlast (database.Database, gtkhandler.GTKHandler):
     """
     def __init__(self):
         print ('Initializing PodBlast...')
-
         # Defines state trackers:
-        self.feed_pkid = None
-        self.episode_pkid = None
+        self.actv_feed_pkid = None
+        self.actv_epsd_pkid = None
 
         # Calls parent class constructors:
         database.Database.__init__(self)
-        gtkhandler.GTKHandler.__init__(self)
 
         # Instantiates 'Player' component object:
         self.stream = player.Player()
 
-    # Calls the front-end main function:
-    def main (self):
-        self.gtk_main()
-
     #---------------- ----- --- --- - - - -  -     -
     # Player controls:
 
-    # Sets the PKID values of the "state tracker" (ie: 'self.feed_pkid' and
-    # 'self.episode_pkid') values:
-    def set (self, feed_pkid, episode_pkid):
-        max_feed_pkid = len(self.feeds)
-        if (feed_pkid != None
-            and (feed_pkid >= max_feed_pkid or feed_pkid < 0)):
-            print ("Feed index out of range.")
-        else:
-            max_episode_pkid = len(self.feeds[feed_pkid].episodes)
-            if (episode_pkid != None
-                and (episode_pkid >= max_episode_pkid
-                    or episode_pkid < 0)):
-                print ("Episode index out of range.")
+    # Sets the PKID values of the "state tracker" (ie: 'self.actv_feed_pkid' and
+    # 'self.actv_epsd_pkid') values:
+    def set (self, actv_feed_pkid, actv_epsd_pkid):
+        max_actv_feed_pkid = len(self.feeds)
+        if actv_feed_pkid != None:
+            if actv_feed_pkid >= max_actv_feed_pkid or actv_feed_pkid < 0:
+                print ("Feed index out of range.")
             else:
-                self.feed_pkid = feed_pkid
-                self.episode_pkid = episode_pkid
-                self.reset()
+                max_actv_epsd_pkid = len(self.feeds[actv_feed_pkid].episodes)
+                if (actv_epsd_pkid != None
+                    and (actv_epsd_pkid >= max_actv_epsd_pkid
+                        or actv_epsd_pkid < 0)):
+                    print ("Episode index out of range.")
+                else:
+                    self.actv_feed_pkid = actv_feed_pkid
+                    self.actv_epsd_pkid = actv_epsd_pkid
+                    print ('Checking if new.')
+                    if (actv_epsd_pkid != None
+                        and self.check_new(
+                            actv_feed_pkid,
+                            actv_epsd_pkid)):
+                        self.mark_old(actv_feed_pkid, actv_epsd_pkid)
+                    self.reset()
+        else:
+            self.actv_feed_pkid = None
+            self.actv_epsd_pkid = None
 
     # Stops the current stream, gets the desired URL based on the "state
     # tracker" and passes that url to the player:
     def reset(self):
         self.stream.stop()
-        if (self.feed_pkid != None
-            and self.episode_pkid != None):
-            feed = self.feeds[self.feed_pkid]
-            episode = feed.episodes[self.episode_pkid]
+        if (self.actv_feed_pkid != None
+            and self.actv_epsd_pkid != None):
+            feed = self.feeds[self.actv_feed_pkid]
+            episode = feed.episodes[self.actv_epsd_pkid]
             media_url = episode.media[0]
             self.stream.set(media_url)
+            print ('Reset successfully called: [' + str(self.actv_feed_pkid) + ',' + str(self.actv_epsd_pkid) + ']')
 
     # Pauses or plays GStreamer playback based on the current player state:
     def play_pause (self):
-        self.stream.play_pause()
+        if self.stream.player_state is not 'PLAYING':
+            self.stream.play()
+        else:
+            self.stream.pause()
 
     # Stops GStreamer playback and sets the episode tracker to "None":
     def stop (self):
         self.stream.stop()
-        self.set(self.feed_pkid, None)
+        self.set(self.actv_feed_pkid, None)
 
     # Starts playing the "next" episode in the feed:
     def next (self):
-        max_pkid = len(self.feeds[self.feed_pkid].episodes)
-        if self.episode_pkid < max_pkid:
-            self.episode_pkid += 1
+        max_pkid = len(self.feeds[self.actv_feed_pkid].episodes)
+        if self.actv_epsd_pkid < max_pkid:
+            self.actv_epsd_pkid += 1
             self.reset()
             self.play_pause()
         else:
@@ -102,9 +109,19 @@ class PodBlast (database.Database, gtkhandler.GTKHandler):
 
     # Starts playing the "previous" episode in the feed:
     def prev (self):
-        if self.episode_pkid > 0:
-            self.episode_pkid -= 1
+        if self.actv_epsd_pkid > 0:
+            self.actv_epsd_pkid -= 1
             self.reset()
             self.play_pause()
         else:
             print ("Already at the beginning of the current playlist.")
+
+    # CLI interface to print feeds:
+    def get_feeds (self):
+        for index, feed in enumerate(feeds):
+            print (index + ": " + feed.title)
+
+    # CLI interface to print episodes
+    def get_episodes (self, actv_feed_pkid):
+        for index, epsd in enumerate(self.feeds[actv_feed_pkid].episodes):
+            print (index + ": " + epsd.title)

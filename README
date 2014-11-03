@@ -6,7 +6,7 @@ users to subscribe and listen to their favorite feeds.
 
 ## Dependencies
 
-PodBlast was developed on Gentoo with the following dependencies:
+PodBlast was developed on Gentoo and requires the following system packages:
 
  * **Python v.3** (python-3.4) - Everybody's favorite scripting language
  * **GTK+ v.3** (gtk+-3.12.2) - The Gnome Toolkit (a GUI library)
@@ -14,7 +14,7 @@ PodBlast was developed on Gentoo with the following dependencies:
  * **PyGObject** (pygobject-3.12.2) - GTK+ v.3 bindings for Python v.3
  * **GStreamer** (gst-python-1.2.1) - Gstreamer v.1 bindings for Python v.3
 
-PodBlast also takes advantage of the following Python libraries:
+PodBlast requires the following python libraries:
 
  * **GObject** (gi) to fetch 'Gst' and 'Gtk' libraries in Python 3,
  * **System** (sys) to close the program,
@@ -26,10 +26,8 @@ PodBlast also takes advantage of the following Python libraries:
 ## Running PodBlast
 
 PodBlast was primarily developed using Gentoo GNU/Linux with some work performed
-on Mac OS X (10.9.5). It will therefore undoubtedly run best on GNU/Linux
-provided that its dependencies are met. If that is the case, in order to run
-PodBlast you should only have to use the bash script ("podblast") located in the
-root directory of the program (also called "podblast").
+on Mac OS X (10.9.5). So long as its dependencies are met, it can be started
+with the bash script in the root directory of the program.
 
 ### OS X
 
@@ -67,6 +65,7 @@ tutorial:
 Here are some valuable references:
  * **Bold TreeView Rows:** http://stackoverflow.com/questions/8491310/bold-unbold-rows-in-pygtk-treeview
  * **TreeView Signals:** http://www.pygtk.org/pygtk2tutorial/sec-TreeViewSignals.html
+ * **Gtk Dialogues:** http://python-gtk-3-tutorial.readthedocs.org/en/latest/dialogs.html
 
 ### NOTES
 

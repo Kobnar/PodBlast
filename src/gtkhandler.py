@@ -19,6 +19,8 @@
 #
 #------------------------------------------------------------------------------#
 
+import pbutils
+import podblast
 import gtkinterface
 
 #------------------------------------------------------------------------------#
@@ -36,7 +38,7 @@ class GTKHandler(object):
         print ('Initializing GTK signal handler...')
 
         # Instantiates and connects GTK/Glade user interface component:
-        print ('...Creating user interface coponent.')
+        self.pb = podblast.PodBlast()
         self.ux = gtkinterface.GTKInterface()
 
         print ('...Connecting front-end signals to back-end methods.')
@@ -44,7 +46,7 @@ class GTKHandler(object):
         self.ux.gtk_builder.connect_signals(self)
 
     # Populates all of the GUI data before starting the GTK+ loop:
-    def gtk_main (self):
+    def main (self):
         self.rebuild_feed_list()
         self.refresh_player_buttons()
         self.ux.main()
@@ -53,67 +55,119 @@ class GTKHandler(object):
     # Front-end signals:
 
     def on_main_window_delete_event (self, widget, *args):
-        self.stream.null()
-        self.save()
+        self.pb.stream.null()
         self.ux.main_quit()
 
-    def on_load_menuitem_activate (self, *args):
-        self.load()
+    def on_about (self, *args):
+        self.ux.about_dialog.show()
 
-    def on_save_menuitem_activate (self, *args):
-        self.save()
+    def on_about_close_button_clicked (self, button):
+        self.ux.about_dialog.hide()
 
-    def on_feed_combo_changed (self, feed_combo):
-        # Gets 'feed_pkid' from user interface:
-        feed_iter = feed_combo.get_active_iter()
-        feed_model = feed_combo.get_model()
-        feed_pkid = feed_model[feed_iter][0]
-
-        # Updates state tracker:
-        self.feed_pkid = feed_pkid
-        self.episode_pkid = None
-
-        # Refreshes episode treeview:
+    def on_new (self, *args):
+        # Reset database:
+        self.pb.feeds = []
+        self.pb.set(None, None)
+        self.pb.file_path = self.default_file_path
+        # Refresh GUI:
+        self.rebuild_feed_list()
         self.rebuild_episode_list()
-
-    def on_episode_treeview_cursor_changed (self, *args):
-        # Assume a change means something is selected, which will pass cleanly
-        # to 'self.play()':
-        self.ux.set_player_buttons_ready()
-
-    def on_episode_treeview_row_activated (self, *args):
-        # Get the pkid for the row and update the GUI, states and player:
-        self.episode_pkid = self.ux.get_episode_pkid()
-        self.reset()
-        self.play_pause()
         self.refresh_player_buttons()
-        self.ux.refresh_episode_list(self.episode_pkid)
 
-    def on_play_button_clicked (self, button):
-        if self.episode_pkid != None:
-            self.play_pause()
+    def on_load (self, *args):
+        file_path = self.ux.load_dialog()
+        if file_path != None:
+            self.pb.file_path = file_path
+            self.pb.load(self.pb.file_path)
+            self.pb.stop()
+            # Refresh GUI:
+            self.rebuild_feed_list()
+            self.rebuild_episode_list()
+            self.refresh_player_buttons()
+
+    def on_save (self, *args):
+        self.pb.save(self.pb.file_path)
+
+    def on_saveas (self, *args):
+        file_path = self.ux.save_dialog()
+        if file_path != None:
+            self.pb.file_path = file_path
+            self.pb.save(self.pb.file_path)
+
+    def on_add_feed (self, button):
+        self.ux.add_feed_show()
+
+    def on_add_feed_ok_clicked (self, button):
+        feed_url = pbutils.validate_url(
+            self.ux.get_add_feed_url()
+            )
+        if feed_url:
+            self.pb.register_feed(feed_url)
+            self.ux.add_feed_hide()
+            self.rebuild_feed_list()
             self.refresh_player_buttons()
         else:
-            self.episode_pkid = self.ux.get_episode_pkid()
-            self.reset()
-            self.play_pause()
+            self.ux.error_dialog ('Invalid URL')
+
+    def on_add_feed_cancel_clicked (self, button):
+        self.ux.add_feed_hide()
+
+    def on_refresh_feeds (self, *args):
+        self.ux.error_dialog('Refresh not yet implemented.')
+
+    def on_configure_feeds (self, *args):
+        self.ux.error_dialog('Feed configuration not yet implemented.')
+
+    def on_feed_combo_changed (self, feed_combo):
+        # Gets the new feed pkid from the GUI and sets the tracker:
+        self.ux.actv_feed_pkid = self.ux.get_feed_pkid()
+        self.pb.stop()
+        # Refreshes episode treeview:
+        self.rebuild_episode_list()
+        # self.ux.refresh_episode_list(self.ux.actv_epsd_pkid)
+
+    def on_episode_treeview_row_activated (self, *args):
+        # Get the PKIDs for the selected feed and episode:
+        feed_pkid = self.ux.actv_feed_pkid
+        episode_pkid = self.ux.get_epsd_pkid()
+        self.ux.actv_epsd_pkid = episode_pkid
+        # Update back-end:
+        self.pb.set(feed_pkid, episode_pkid)
+        self.pb.play_pause()
+        # Update front-end:
+        self.ux.mark_old()
+        self.ux.refresh_episode_list(self.pb.actv_epsd_pkid)
+        self.refresh_player_buttons()
+
+    def on_play_button_clicked (self, button):
+        if self.pb.actv_epsd_pkid != None:
+            self.pb.play_pause()
+            self.ux.mark_old()
             self.refresh_player_buttons()
-            self.ux.refresh_episode_list(self.episode_pkid)
+        else:
+            episode_pkid = self.ux.get_epsd_pkid()
+            self.pb.actv_epsd_pkid = episode_pkid
+            self.ux.actv_epsd_pkid = episode_pkid
+            self.pb.reset()
+            self.pb.play_pause()
+            self.ux.mark_old()
+            self.ux.refresh_episode_list(self.pb.actv_epsd_pkid)
+            self.refresh_player_buttons()
 
     def on_stop_button_clicked (self, button):
-        self.stop()
+        self.pb.stop()
+        self.ux.stop()
         self.refresh_player_buttons()
-        self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_next_button_clicked (self, button):
-        self.next()
+        self.pb.next()
+        self.ux.next()
         self.refresh_player_buttons()
-        self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_prev_button_clicked (self, button):
-        self.prev()
+        self.pb.prev()
+        self.ux.prev()
         self.refresh_player_buttons()
-        self.ux.refresh_episode_list(self.episode_pkid)
 
     def on_rwnd_button_clicked (self, button):
         print ('Rewind feature not yet implemented.')
@@ -126,23 +180,38 @@ class GTKHandler(object):
 
     def rebuild_feed_list (self):
         # TODO: Need test to pass subscribed feeds only.
-        feed_titles = []
-        for index, feed in enumerate(self.feeds):
-            feed_titles.append([index, feed.title])
-        self.ux.rebuild_feed_list(feed_titles)
+        if self.pb.feeds:
+            feed_titles = []
+            for index, feed in enumerate(self.pb.feeds):
+                feed_titles.append([index, feed.title])
+            self.ux.rebuild_feed_list(feed_titles)
+        else:
+            self.ux.feed_list.clear()
 
     def rebuild_episode_list (self):
-        episode_input = []
-        for index, episode in enumerate(self.feeds[self.feed_pkid].episodes):
-            self.ux.refresh_episode_list(index)
-            episode_input.append([index, episode.title, 400])
-        self.ux.rebuild_episode_list(episode_input)
+        if self.ux.actv_feed_pkid != None:
+            if self.pb.feeds[self.ux.actv_feed_pkid].episodes:
+                episode_input = []
+                for index, episode in enumerate(
+                    self.pb.feeds[self.ux.actv_feed_pkid].episodes
+                    ):
+                    episode_input.append([
+                        index,              # Index
+                        False,              # isPlaying
+                        episode.title,      # Title
+                        episode.is_new,     # isNew
+                        400                 # FontWeight
+                        ])
+                self.ux.rebuild_episode_list(episode_input)
+                self.ux.refresh_episode_list(self.ux.actv_feed_pkid)
+        else:
+            self.ux.episode_list.clear()
 
     def refresh_player_buttons (self):
-        state = self.stream.player_state
-        if self.feed_pkid == None:
+        state = self.pb.stream.player_state
+        if self.pb.actv_feed_pkid == None:
             self.ux.set_player_buttons_dead()
-        elif self.episode_pkid != None:
+        elif self.pb.actv_epsd_pkid != None:
             if state == 'NULL':
                 self.ux.set_player_buttons_null()
             elif state == 'READY':

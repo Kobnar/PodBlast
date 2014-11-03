@@ -27,7 +27,7 @@ import time
 #   url string if the provided URL was valid or 'None' if it was bogus.
 #------------------------------------------------------------------------------#
 
-def validate_url (self, feed_url):
+def validate_url (feed_url):
     # This regex string was shamelessly pulled from Django:
     regex_url = re.compile(
         r'^(?:http|ftp)s?://'  # http:// or https://

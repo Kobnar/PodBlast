@@ -47,6 +47,7 @@ class Episode(object):
             self.media.append(media_source['url'])
         # Defines episode metadata:
         self.downloaded = episode_source.downloaded
+        self.is_new = episode_source.is_new
 
 
 class Feed(object):
@@ -65,7 +66,6 @@ class Feed(object):
             self.episodes.append(Episode(episode_source))
         # Extracts feed metadata:
         self.valid = feed_source.valid
-        self.subscribed = feed_source.subscribed
 
 #------------------------------------------------------------------------------#
 #   The following three classes are designed to work around Python's single
@@ -87,6 +87,7 @@ class LDEpisodeSource(object):
         self.media_content = []
         # Loads episode metadata:
         self.downloaded = source['downloaded']
+        self.is_new = source['is_new']
 
 
 class LDFeedSource(object):
@@ -102,7 +103,6 @@ class LDFeedSource(object):
         self.entries = []
         # Loads feed metadata:
         self.valid = source['valid']
-        self.subscribed = source['subscribed']
 
 
 class FHFeedSource(object):
@@ -113,7 +113,7 @@ class FHFeedSource(object):
     """
     def __init__(self, feed_url):
         # Tries to parse the podcast feed, prints error if it fails:
-        # try:
+        try:
             self.url = feed_url
             source = fdprsr.parse(feed_url)
             self.title = source.feed.title
@@ -121,13 +121,13 @@ class FHFeedSource(object):
             self.entries = source.entries
             for entry in self.entries:
                 entry.downloaded = False
+                entry.is_new = True
+            self.entries.reverse()
             self.valid = True
-            self.subscribed = True
-        # except:
-        #     print ("Failed to parse feed: " + feed_url)
-        #     self.url = feed_url
-        #     self.valid = False
-        #     self.subscribed = False
+        except:
+            print ("Failed to parse feed: " + feed_url)
+            self.url = feed_url
+            self.valid = False
 
 #------------------------------------------------------------------------------#
 #     The following class handles all PodBlast's data, including feed
@@ -146,24 +146,29 @@ class Database(object):
         # Defines registered feed list:
         print ("...Creating feed registry.")
         self.feeds = []
-
-        # Loads persistant data from 'JSON' source:
-        print ("...Loading persistant data.")
-        self.load()
+        self.default_file_path = 'data/podblast_db'
+        self.file_path = self.default_file_path
+        self.load(self.default_file_path)
 
     # Loads data from a 'JSON' formatted database file and reconstructs that
     # data into 'Feed' and 'Episode' objects:
-    def load(self):
+    def load(self, file_path = None):
+        print ('load() called.')
+        if not file_path:
+            file_path = 'data/podblast_db'
+        print ("Loading data from: " + file_path)
         loaded = False
         try:
             # Open 'JSON' database and load data:
-            with open('data/podblast_db', 'r') as json_file:
+            with open(file_path, 'r') as json_file:
                 data_cache = json.load(json_file)
             loaded = True
         except:
             print ("Failed to read database.")
 
         if loaded:
+            # Clear current list:
+            self.feeds = []
             # Reconstruct objects:
             for feed in data_cache:
                 feed_source = LDFeedSource(feed)
@@ -179,7 +184,11 @@ class Database(object):
 
     # Compiles feed, episode and media data into a monolythic 'JSON' compatible
     # dictionary so it can be saved to disk;
-    def save(self):
+    def save(self, file_path = None):
+        print ('save() called.')
+        if not file_path:
+            file_path = 'data/podblast_db'
+        print ("Saving data to: " + file_path)
         if self.feeds:
             # Compile a cache of data:
             data_cache = []
@@ -191,7 +200,6 @@ class Database(object):
                         'description' : feed.description,
                         'episodes': [],
                         'valid' : feed.valid,
-                        'subscribed' : feed.subscribed
                         }
                     for episode in feed.episodes:
                         episode_cache = {
@@ -202,7 +210,8 @@ class Database(object):
                             'dtg_published' : pack_time(
                                 episode.dtg_published
                                 ),
-                            'downloaded' : episode.downloaded
+                            'downloaded' : episode.downloaded,
+                            'is_new' : episode.is_new
                         }
                         for media in episode.media:
                             episode_cache['media'].append(media)
@@ -211,7 +220,7 @@ class Database(object):
 
             try:
                 # Open 'JSON' database and save the cache to disk:
-                with open('data/podblast_db', 'w') as json_file:
+                with open(file_path, 'w') as json_file:
                     json.dump(data_cache, json_file)
             except:
                 print ("Failed to write database.")
@@ -221,6 +230,7 @@ class Database(object):
 
     # Marks a registered feed as 'subscribed', returns boolean "success" report:
     def subscribe_feed(self, feed_url):
+        print ('subscribe_feed() called.')
         search_results = [search for search in self.feeds if search.url == feed_url]
         if search_results:
             for feed in search_results:
@@ -244,22 +254,31 @@ class Database(object):
     # Registers a new feed with PodBlast if it has not already been registered,
     # returns boolean "success" report:
     def register_feed(self, feed_url):
+        print ('register_feed() called.')
         search_results = [search for search in self.feeds if search.url == feed_url]
         if search_results:
             print ("Feed already registered: " + feed_url)
             return False
         else:
-            # try:
+            try:
                 source = FHFeedSource(feed_url)
                 self.feeds.append(
                     Feed(source)
                     )
                 return True
-            # except:
-            #     print ("Failed to register feed: " + feed_url)
-            #     return False
+            except:
+                print ("Failed to register feed: " + feed_url)
+                return False
 
     # Deletes a feed from PodBlast's database, returns boolean "success" report:
     def delete_feed(self, feed_url):
         for feed in [search for search in self.feeds if search.url == feed_url]:
             self.feeds.remove(feed)
+
+    def check_new(self, feed_pkid, episode_pkid):
+        print ('Checking if feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' is "new": ' + str(self.feeds[feed_pkid].episodes[episode_pkid].is_new))
+        return self.feeds[feed_pkid].episodes[episode_pkid].is_new
+
+    def mark_old(self, feed_pkid, episode_pkid):
+        print ('Marking feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' as "old".')
+        self.feeds[feed_pkid].episodes[episode_pkid].is_new = False

@@ -67,13 +67,6 @@ class Player(object):
         self.channel_url = channel_url
         print ('Stream URL set to "' + channel_url + '"')
 
-    # Basic play/pause:
-    def play_pause (self):
-        if self.player_state is not 'PLAYING':
-            self.play()
-        else:
-            self.pause()
-
     # Begins streaming playback:
     def play (self):
         if self.channel_url is 'NULL':
