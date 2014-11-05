@@ -66,22 +66,9 @@ Here are some valuable references:
  * **Bold TreeView Rows:** http://stackoverflow.com/questions/8491310/bold-unbold-rows-in-pygtk-treeview
  * **TreeView Signals:** http://www.pygtk.org/pygtk2tutorial/sec-TreeViewSignals.html
  * **Gtk Dialogues:** http://python-gtk-3-tutorial.readthedocs.org/en/latest/dialogs.html
+ * **Gst.Element:** https://lazka.github.io/pgi-docs/Gst-1.0/classes/Element.html#Gst.Element.query_duration
 
 ### NOTES
 
 MBMBaM: http://feeds.feedburner.com/mbmbam
 Radiolab: http://feeds.wnyc.org/radiolab
-
-Test Startup:
-
-import src.podblast
-blaster = src.podblast.PodBlast()
-
-blaster.set(0,0)
-blaster.next()
-
-blaster.register_feed("http://feeds.feedburner.com/mbmbam")
-blaster.register_feed("http://feeds.wnyc.org/radiolab")
-
-blaster.save()
-ext

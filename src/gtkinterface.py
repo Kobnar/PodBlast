@@ -20,6 +20,7 @@
 #------------------------------------------------------------------------------#
 
 import sys
+from pbutils import format_time
 try:
     from gi.repository import Gtk
 except:
@@ -38,14 +39,13 @@ class GTKInterface(object):
         # Creates state trackers for user interface:
         self.actv_feed_pkid = None
         self.actv_epsd_pkid = None
+        self.player_state = 'NULL'
 
-        print ('...Connecting to GTK/Glade interface file.')
         # Defines the GTK/Glade interface source file and 'Gtk.Builder' object.
         self.ux_source = 'ux/podblast.glade'
         self.gtk_builder = Gtk.Builder()
         self.gtk_builder.add_from_file(self.ux_source)
 
-        print ('...Linking to GTK front-end objects.')
         # Links to main window and dialog window objects:
         self.main_window = self.gtk_builder.get_object('main_window')
         self.about_dialog = self.gtk_builder.get_object('about_dialog')
@@ -59,20 +59,26 @@ class GTKInterface(object):
         # self.feed_treeview = self.gtk_builder.get_object('feed_treeview')
         self.feed_list = self.gtk_builder.get_object('feed_list')
         self.episode_treeview = self.gtk_builder.get_object('episode_treeview')
-        self.episode_treeview.connect('size-allocate', self.episode_treeview_changed)
         self.episode_list = self.gtk_builder.get_object('episode_list')
 
         # Links to player buttons:
         self.prev_button = self.gtk_builder.get_object('prev_button')
-        # self.rwnd_button = self.gtk_builder.get_object('rwnd_button')
+        self.rwnd_button = self.gtk_builder.get_object('rwnd_button')
         self.play_button = self.gtk_builder.get_object('play_button')
         self.play_image = self.gtk_builder.get_object('play_image')
         self.stop_button = self.gtk_builder.get_object('stop_button')
-        # self.ffwd_button = self.gtk_builder.get_object('ffwd_button')
+        self.ffwd_button = self.gtk_builder.get_object('ffwd_button')
         self.next_button = self.gtk_builder.get_object('next_button')
+
+        # Links to player time slider:
+        self.time_position_label = self.gtk_builder.get_object('time_position_label')
+        self.time_duration_label = self.gtk_builder.get_object('time_duration_label')
+        self.time_scale = self.gtk_builder.get_object('time_scale')
+        self.time_scale_adjustment = self.gtk_builder.get_object('time_scale_adjustment')
 
     # Draws all the windows and starts the GTK+ loop:
     def main (self):
+        self.refresh_player_buttons()
         self.main_window.show_all()
         Gtk.main()
 
@@ -82,6 +88,10 @@ class GTKInterface(object):
 
     #---------------- ----- --- --- - - - -  -     -
     # Refreshing and managing 'TreeView' data:
+
+    def refresh_ux (self):
+        self.refresh_episode_list()
+        self.refresh_player_buttons()
 
     def rebuild_feed_list (self, feed_titles):
         # print ('rebuild_feed_list() called.')
@@ -94,16 +104,23 @@ class GTKInterface(object):
         self.episode_list.clear()
         for episode in episode_input:
             self.episode_list.append(episode)
+        self.refresh_episode_list()
+        # adjustment = self.episode_treeview.get_vadjustment()
+        self.episode_treeview.scroll_to_cell(len(self.episode_list) - 1)
 
-    def refresh_episode_list (self, actv_epsd_pkid):
-        # print ('refresh_episode_list() called.')
+    def refresh_episode_list (self):
+        print ('GTKInterface:\trefresh_episode_list() called.')
         for episode in self.episode_list:
             # Sets icon marking the currently playing episode:
-            if episode[0] == actv_epsd_pkid:
+            if episode[0] == self.actv_epsd_pkid:
                 episode[1] = True
+                if self.player_state == 'PLAYING':
+                    episode[5] = 'media-playback-start'
+                else:
+                    episode[5] = 'media-playback-pause'
             else:
                 episode[1] = False
- 
+
             # Bolds unheard podcasts:
             if episode[3] == True:
                 episode[4] = 700
@@ -111,14 +128,12 @@ class GTKInterface(object):
                 episode[4] = 400
 
     def mark_old (self):
+        # print ('GTKInterface:\tmark_old() called.')
         for episode in self.episode_list:
             if episode[0] == self.actv_epsd_pkid:
+                print ('GTKInterface:\tMarking episode #'
+                    + str(self.actv_epsd_pkid) + 'as "old".')
                 episode[3] = False
-
-    # Auto-scrolls the episode TreeView:
-    def episode_treeview_changed ( self, widget, event, data=None ):
-        adjustment = widget.get_vadjustment()
-        adjustment.set_value( adjustment.get_upper() - adjustment.get_page_size() )
 
     def get_feed_pkid (self):
         # print ('get_feed_pkid() called.')
@@ -136,69 +151,112 @@ class GTKInterface(object):
     #---------------- ----- --- --- - - - -  -     -
     # Surrogate player controls:
 
+    def play_pause (self):
+        if self.player_state is not 'PLAYING':
+            self.play()
+        else:
+            self.pause()
+
+    def play (self):
+        self.mark_old()
+        self.refresh_ux()
+
+    def pause (self):
+        self.refresh_ux()
+
     def stop (self):
-        self.actv_epsd_pkid = None
-        self.refresh_episode_list(self.actv_epsd_pkid)
+        self.refresh_ux()
 
-    def next (self):
-        self.actv_epsd_pkid += 1
-        self.mark_old()
-        self.refresh_episode_list(self.actv_epsd_pkid)
-
-    def prev (self):
-        self.actv_epsd_pkid -= 1
-        self.mark_old()
-        self.refresh_episode_list(self.actv_epsd_pkid)
+    def null (self):
+        self.refresh_ux()
 
     #---------------- ----- --- --- - - - -  -     -
-    # Setting th player GTK+ button "sensitivity" states:
+    # Refreshing the time slider:
 
-    def set_player_buttons (self, state):
+    def set_time_scale (self, position_data):
+        duration, position = position_data
+        self.set_time_scale_duration(duration)
+        self.set_time_scale_position(position)
+
+    def set_time_scale_duration (self, duration):
+        duration = int(round(duration, 0))
+        duration_string = format_time(duration).strftime('%H:%M:%S')
+        self.time_scale_adjustment.set_upper(duration)
+        self.time_duration_label.set_text(duration_string)
+
+    def set_time_scale_position (self, position):
+        position = int(round(position, 0))
+        position_string = format_time(position).strftime('%H:%M:%S')
+        self.time_scale_adjustment.set_value(position)
+        self.time_position_label.set_text(position_string)
+
+    def get_time_scale_position (self):
+        return self.time_scale_adjustment.get_value()
+
+    #---------------- ----- --- --- - - - -  -     -
+    # Player GTK+ button "sensitivity" states:
+
+    def set_player_buttons (self, state = 'DEAD'):
         if state == 'NULL':
             # print ('set_player_buttons_null() called.')
             self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
             self.prev_button.set_sensitive(False)
-            # self.rwnd_button.set_sensitive(False)
+            self.rwnd_button.set_sensitive(False)
             self.play_button.set_sensitive(True)
             self.stop_button.set_sensitive(False)
-            # self.ffwd_button.set_sensitive(False)
+            self.ffwd_button.set_sensitive(False)
             self.next_button.set_sensitive(False)
         elif state == 'READY':
             # print ('set_player_buttons_ready() called.')
             self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
             self.prev_button.set_sensitive(False)
-            # self.rwnd_button.set_sensitive(False)
+            self.rwnd_button.set_sensitive(False)
             self.play_button.set_sensitive(True)
             self.stop_button.set_sensitive(False)
-            # self.ffwd_button.set_sensitive(False)
+            self.ffwd_button.set_sensitive(False)
             self.next_button.set_sensitive(False)
-        elif state == 'PLAY':
+        elif state == 'PLAYING':
             # print ('set_player_buttons_playing() called.')
             self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PAUSE, 4)
             self.prev_button.set_sensitive(True)
-            # self.rwnd_button.set_sensitive(True)
+            self.rwnd_button.set_sensitive(True)
             self.play_button.set_sensitive(True)
             self.stop_button.set_sensitive(True)
-            # self.ffwd_button.set_sensitive(True)
+            self.ffwd_button.set_sensitive(True)
             self.next_button.set_sensitive(True)
         elif state == 'PAUSED':
             # print ('set_player_buttons_paused() called.')
             self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
             self.prev_button.set_sensitive(True)
-            # self.rwnd_button.set_sensitive(True)
+            self.rwnd_button.set_sensitive(True)
             self.play_button.set_sensitive(True)
             self.stop_button.set_sensitive(True)
-            # self.ffwd_button.set_sensitive(True)
+            self.ffwd_button.set_sensitive(True)
             self.next_button.set_sensitive(True)
-        else:
+        else:   # 'DEAD'
             # print ('set_player_buttons_dead() called.')
             self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
             self.prev_button.set_sensitive(False)
-            # self.rwnd_button.set_sensitive(False)
+            self.rwnd_button.set_sensitive(False)
             self.play_button.set_sensitive(False)
             self.stop_button.set_sensitive(False)
-            # self.ffwd_button.set_sensitive(False)
+            self.ffwd_button.set_sensitive(False)
             self.next_button.set_sensitive(False)
+
+    def refresh_player_buttons (self):
+        if self.actv_feed_pkid == None:
+            self.set_player_buttons('DEAD')
+        elif self.actv_epsd_pkid != None:
+            if self.player_state == 'NULL':
+                self.set_player_buttons('NULL')
+            elif self.player_state == 'READY':
+                self.set_player_buttons('READY')
+            elif self.player_state == 'PAUSED':
+                self.set_player_buttons('PAUSED')
+            elif self.player_state == 'PLAYING':
+                self.set_player_buttons('PLAYING')
+        else:
+            self.set_player_buttons('NULL')
 
     #---------------- ----- --- --- - - - -  -     -
     # Dialog windows:
@@ -210,7 +268,7 @@ class GTKInterface(object):
             Gtk.MessageType.ERROR, 
             Gtk.ButtonsType.OK, 
             message)
-        message_dialog.set_title('Error!')
+        message_dialog.set_title('PodBlast Message')
         message_dialog.run()
         message_dialog.destroy()
 

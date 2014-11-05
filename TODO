@@ -7,6 +7,3 @@
  * Keep track of currently playing episode when the feed is switched INSTEAD OF STOPPING
  * At the end of the current stream, start playing the next one on the playlist
  * Spinning wheel for internet connections..
- * make these changes:
-    - class Player > class Stream
- * Add seeking

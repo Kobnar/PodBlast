@@ -144,19 +144,17 @@ class Database(object):
         print ("Initializing Database...")
 
         # Defines registered feed list:
-        print ("...Creating feed registry.")
         self.feeds = []
         self.default_file_path = 'data/podblast_db'
         self.file_path = self.default_file_path
-        self.load(self.default_file_path)
 
     # Loads data from a 'JSON' formatted database file and reconstructs that
     # data into 'Feed' and 'Episode' objects:
     def load(self, file_path = None):
-        print ('load() called.')
+        print ('Database:\tload() called.')
         if not file_path:
             file_path = 'data/podblast_db'
-        print ("Loading data from: " + file_path)
+        print ("Database:\tLoading data from: " + file_path)
         loaded = False
         try:
             # Open 'JSON' database and load data:
@@ -164,7 +162,7 @@ class Database(object):
                 data_cache = json.load(json_file)
             loaded = True
         except:
-            print ("Failed to read database.")
+            print ("Database:\tFailed to read database.")
 
         if loaded:
             # Clear current list:
@@ -185,10 +183,10 @@ class Database(object):
     # Compiles feed, episode and media data into a monolythic 'JSON' compatible
     # dictionary so it can be saved to disk;
     def save(self, file_path = None):
-        print ('save() called.')
+        print ('Database:\tsave() called.')
         if not file_path:
             file_path = 'data/podblast_db'
-        print ("Saving data to: " + file_path)
+        print ("Database:\tSaving data to: " + file_path)
         if self.feeds:
             # Compile a cache of data:
             data_cache = []
@@ -223,33 +221,10 @@ class Database(object):
                 with open(file_path, 'w') as json_file:
                     json.dump(data_cache, json_file)
             except:
-                print ("Failed to write database.")
+                print ("Database:\tFailed to write database.")
 
         else:
-            print ("No feeds to save.")
-
-    # Marks a registered feed as 'subscribed', returns boolean "success" report:
-    def subscribe_feed(self, feed_url):
-        print ('subscribe_feed() called.')
-        search_results = [search for search in self.feeds if search.url == feed_url]
-        if search_results:
-            for feed in search_results:
-                feed.subscribed = True
-            return True
-        else:
-            print ("Could not find a valid feed to set subscription: " + feed_url)
-            return False
-
-    # Unmarks a registered feed as 'subscribed', returns boolean "success" report:
-    def unsubscribe_feed(self, feed_url):
-        search_results = [search for search in self.feeds if search.url == feed_url]
-        if search_results:
-            for feed in search_results:
-                feed.subscribed = False
-            return True
-        else:
-            print ("Could not find a valid feed to unset subcription: " + feed_url)
-            return False
+            print ("Database:\tNo feeds to save.")
 
     # Registers a new feed with PodBlast if it has not already been registered,
     # returns boolean "success" report:
@@ -257,7 +232,7 @@ class Database(object):
         print ('register_feed() called.')
         search_results = [search for search in self.feeds if search.url == feed_url]
         if search_results:
-            print ("Feed already registered: " + feed_url)
+            print ("Database:\tFeed already registered: " + feed_url)
             return False
         else:
             try:
@@ -267,7 +242,7 @@ class Database(object):
                     )
                 return True
             except:
-                print ("Failed to register feed: " + feed_url)
+                print ("Database:\tFailed to register feed: " + feed_url)
                 return False
 
     # Deletes a feed from PodBlast's database, returns boolean "success" report:
@@ -276,9 +251,9 @@ class Database(object):
             self.feeds.remove(feed)
 
     def check_new(self, feed_pkid, episode_pkid):
-        print ('Checking if feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' is "new": ' + str(self.feeds[feed_pkid].episodes[episode_pkid].is_new))
+        print ('Database:\tChecking if feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' is "new": ' + str(self.feeds[feed_pkid].episodes[episode_pkid].is_new))
         return self.feeds[feed_pkid].episodes[episode_pkid].is_new
 
     def mark_old(self, feed_pkid, episode_pkid):
-        print ('Marking feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' as "old".')
+        print ('Database:\tMarking feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' as "old".')
         self.feeds[feed_pkid].episodes[episode_pkid].is_new = False

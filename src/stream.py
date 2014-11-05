@@ -41,7 +41,6 @@ class Stream(object):
 
         # Instantiates the 'GStreamer' player 'engine' and defines the current
         #   output sink as 'pulseaudio':
-        print ('...Creating Gstreamer engine.')
         self.engine = Gst.ElementFactory.make('playbin', 'player')
         self.engine.set_property(
             'audio-sink',
@@ -50,48 +49,88 @@ class Stream(object):
             )
 
         # Instantiates the 'GStreamer' 'bus':
-        print ('...Creating Gstreamer bus.')
         bus = self.engine.get_bus()
         bus.enable_sync_message_emission()
         bus.add_signal_watch()
-        # bus.connect('message', self.gst_message_handler)
+        bus.connect('message', self.gst_message_handler)
 
-        print ('...Defining custom player state handler.')
         # Defines our own state handler for 'GStreamer':
         self.player_state = 'NULL'
         self.channel_url = 'NULL'
+
+    # HAVE PODBLAST HANDLE THE MESSAGES!?!
+    def gst_message_handler (self, bus, message):
+        # if message.type == Gst.MessageType.STATE_CHANGED:
+        #     old, new, pending = message.parse_state_changed()
+        # elif (message.type is Gst.MessageType.DURATION_CHANGED
+        #     and (engine_state is Gst.State.PLAYING
+        #         or engine_state is Gst.State.PAUSED)):
+        #     print ('Stream:\t\tDuration changed and player can play.')
+        #     self.refresh_duration()
+        pass
 
     # Sets the current channel url:
     def set (self, channel_url):
         self.engine.set_property('uri', channel_url)
         self.channel_url = channel_url
-        print ('Stream URL set to "' + channel_url + '"')
+        print ('Stream:\t\tStream URL set to "' + channel_url + '"')
 
     # Begins streaming playback:
     def play (self):
+        print ('Stream:\t\tplay()')
         if self.channel_url is 'NULL':
-            print ('Please set a media source to stream.')
+            print ('Stream:\t\tPlease set a media source before calling Stream.play().')
         else:
             self.engine.set_state(Gst.State.PLAYING)
             self.player_state = 'PLAYING'
-            print ('Stream is now playing. (' + self.player_state + ')')
 
     # Pauses current playback (in-place):
     def pause (self):
+        print ('Stream:\tpause()')
         self.engine.set_state(Gst.State.PAUSED)
         self.player_state = 'PAUSED'
-        print ('Stream is now paused. (' + self.player_state + ')')
 
     # Stops current playback (reset):
     def stop (self):
+        print ('Stream:\t\tstop()')
         self.engine.set_state(Gst.State.READY)
         self.player_state = 'READY'
-        print ('Stream is now stopped. (' + self.player_state + ')')
         self.set('NULL')
 
     # Nullifies the stream (for application shutdown):
     def null (self):
+        print ('Stream:\t\tnull()')
         self.engine.set_state(Gst.State.NULL)
         self.player_state = 'NULL'
         self.set('NULL')
-        print ('Stream is nullified. (' + self.player_state + ')')
+
+    def ffwd (self):
+        duration, position = self.get_position()
+        position += 30
+        self.set_position(position)
+
+    def rwnd (self):
+        duration, position = self.get_position()
+        position -= 30
+        self.set_position(position)
+
+    # Returns a tuple with the position and the duration of the stream:
+    def get_position (self):
+        # Perform duration query:
+        duration_query = self.engine.query_duration(Gst.Format.TIME)
+        if duration_query[0]:
+            duration = duration_query[1] / Gst.SECOND
+        else:
+            duration = 0
+        # Perform position query:
+        position_query = self.engine.query_position(Gst.Format.TIME)
+        if position_query[0]:
+            position = position_query[1] / Gst.SECOND
+        else:
+            position = 0
+        # Return both.
+        # print ('Stream:\t\t[', position, ',', duration, ']')
+        return (duration, position)
+
+    def set_position (self, raw_seconds):
+        self.engine.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, raw_seconds * Gst.SECOND)

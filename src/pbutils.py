@@ -21,6 +21,7 @@
 
 import re
 import time
+import datetime
 
 #------------------------------------------------------------------------------#
 #     The following function "validates" a URL, returning a parsed and cleaned
@@ -73,3 +74,15 @@ def unpack_time(timeinfo):
         timeinfo['tm_yday'],
         timeinfo['tm_isdst']
         ])
+
+#------------------------------------------------------------------------------#
+#     The following function converts time given in raw seconds to a formatted
+#   time object.
+#------------------------------------------------------------------------------#
+
+def format_time (raw_seconds):
+    seconds = int(raw_seconds % 60)
+    hours = int(raw_seconds / 60 / 60)
+    minutes = int(raw_seconds / 60 - hours * 60)
+    hhmmss = datetime.time(hours, minutes, seconds, 0, tzinfo=None)
+    return hhmmss

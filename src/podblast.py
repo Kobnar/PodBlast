@@ -20,7 +20,7 @@
 #------------------------------------------------------------------------------#
 
 import database
-import player
+import stream
 import gtkhandler
 
 #------------------------------------------------------------------------------#
@@ -41,33 +41,33 @@ class PodBlast (database.Database):
         database.Database.__init__(self)
 
         # Instantiates 'Stream' component object:
-        self.stream = player.Stream()
+        self.stream = stream.Stream()
 
     #---------------- ----- --- --- - - - -  -     -
     # Stream controls:
 
     # Sets the PKID values of the "state tracker" (ie: 'self.actv_feed_pkid' and
     # 'self.actv_epsd_pkid') values:
-    def set (self, actv_feed_pkid, actv_epsd_pkid):
-        max_actv_feed_pkid = len(self.feeds)
-        if actv_feed_pkid != None:
-            if actv_feed_pkid >= max_actv_feed_pkid or actv_feed_pkid < 0:
-                print ("Feed index out of range.")
+    def set (self, feed_pkid, epsd_pkid):
+        max_feed_pkid = len(self.feeds)
+        if feed_pkid != None:
+            if feed_pkid >= max_feed_pkid or feed_pkid < 0:
+                print ('PodBlast:\tFeed index out of range.')
             else:
-                max_actv_epsd_pkid = len(self.feeds[actv_feed_pkid].episodes)
-                if (actv_epsd_pkid != None
-                    and (actv_epsd_pkid >= max_actv_epsd_pkid
-                        or actv_epsd_pkid < 0)):
-                    print ("Episode index out of range.")
+                max_epsd_pkid = len(self.feeds[feed_pkid].episodes)
+                if (epsd_pkid != None
+                    and (epsd_pkid >= max_epsd_pkid
+                        or epsd_pkid < 0)):
+                    print ('PodBlast:\tEpisode index out of range.')
                 else:
-                    self.actv_feed_pkid = actv_feed_pkid
-                    self.actv_epsd_pkid = actv_epsd_pkid
-                    print ('Checking if new.')
-                    if (actv_epsd_pkid != None
+                    print ('PodBlast:\tSetting new PKID pair: [', feed_pkid, ', ', epsd_pkid, ']')
+                    self.actv_feed_pkid = feed_pkid
+                    self.actv_epsd_pkid = epsd_pkid
+                    if (epsd_pkid != None
                         and self.check_new(
-                            actv_feed_pkid,
-                            actv_epsd_pkid)):
-                        self.mark_old(actv_feed_pkid, actv_epsd_pkid)
+                            feed_pkid,
+                            epsd_pkid)):
+                        self.mark_old(feed_pkid, epsd_pkid)
                     self.reset()
         else:
             self.actv_feed_pkid = None
@@ -83,7 +83,6 @@ class PodBlast (database.Database):
             episode = feed.episodes[self.actv_epsd_pkid]
             media_url = episode.media[0]
             self.stream.set(media_url)
-            print ('Reset successfully called: [' + str(self.actv_feed_pkid) + ',' + str(self.actv_epsd_pkid) + ']')
 
     # Pauses or plays GStreamer playback based on the current player state:
     def play_pause (self):
@@ -105,7 +104,7 @@ class PodBlast (database.Database):
             self.reset()
             self.play_pause()
         else:
-            print ("Already at the end of the current playlist.")
+            print ("PodBlast:\tAlready at the end of the current playlist.")
 
     # Starts playing the "previous" episode in the feed:
     def prev (self):
@@ -114,7 +113,17 @@ class PodBlast (database.Database):
             self.reset()
             self.play_pause()
         else:
-            print ("Already at the beginning of the current playlist.")
+            print ("PodBlast:\tAlready at the beginning of the current playlist.")
+
+    def ffwd (self):
+        self.stream.ffwd()
+
+    def rwnd (self):
+        self.stream.rwnd()
+
+    def null (self):
+        self.set(None, None)
+        self.stream.null()
 
     # CLI interface to print feeds:
     def get_feeds (self):
@@ -125,3 +134,12 @@ class PodBlast (database.Database):
     def get_episodes (self, actv_feed_pkid):
         for index, epsd in enumerate(self.feeds[actv_feed_pkid].episodes):
             print (index + ": " + epsd.title)
+
+    def get_player_state (self):
+        return self.stream.player_state
+
+    def get_position (self):
+        return self.stream.get_position()
+
+    def set_position (self, raw_seconds):
+        self.stream.set_position(raw_seconds)
