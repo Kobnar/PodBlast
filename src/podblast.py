@@ -1,6 +1,6 @@
-#------------------------------------------------------------------------------#\
+#------------------------------------------------------------------------------#
 #
-#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
+#     Copyright 2014 by Konrad R.K. Ludwig.
 #
 #     This file is part of PodBlast.
 #
@@ -28,8 +28,8 @@ import gtkhandler
 class PodBlast (database.Database):
     """
     The primary PodBlast class with all of the necessary implementatons to fetch
-    data from a remote feed, save/load data using JSON, set and control a
-    streaming audio, and interface with the PodBlast GTK/Glade frontend.
+    data from a remote feed, save/load data using JSON, and set/control a
+    streaming audio channel.
     """
     def __init__(self):
         print ('Initializing PodBlast...')
@@ -40,11 +40,11 @@ class PodBlast (database.Database):
         # Calls parent class constructors:
         database.Database.__init__(self)
 
-        # Instantiates 'Player' component object:
-        self.stream = player.Player()
+        # Instantiates 'Stream' component object:
+        self.stream = player.Stream()
 
     #---------------- ----- --- --- - - - -  -     -
-    # Player controls:
+    # Stream controls:
 
     # Sets the PKID values of the "state tracker" (ie: 'self.actv_feed_pkid' and
     # 'self.actv_epsd_pkid') values:

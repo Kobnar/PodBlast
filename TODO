@@ -7,9 +7,6 @@
  * Keep track of currently playing episode when the feed is switched INSTEAD OF STOPPING
  * At the end of the current stream, start playing the next one on the playlist
  * Spinning wheel for internet connections..
- * Seperate GUI from Backend
  * make these changes:
-    - self.feed_pkid > self.actv_feed_pkid
-    - self.episode_pkid > self.actv_epsd_pkid
     - class Player > class Stream
  * Add seeking

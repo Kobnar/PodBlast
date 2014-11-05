@@ -10,7 +10,7 @@
     <property name="has_resize_grip">False</property>
     <property name="program_name">PodBlast</property>
     <property name="version">0.2.1</property>
-    <property name="copyright" translatable="yes">Copyright © 2014 Konrad R.K. Ludwig. All rights reserved.</property>
+    <property name="copyright" translatable="yes">Copyright © 2014 Konrad R.K. Ludwig.</property>
     <property name="comments" translatable="yes">A simple podcast streaming application.</property>
     <property name="website">http://www.konradrkludwig.com</property>
     <property name="website_label" translatable="yes">http://www.konradrkludwig.com</property>

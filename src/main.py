@@ -1,6 +1,6 @@
-#------------------------------------------------------------------------------#\
+#------------------------------------------------------------------------------#
 #
-#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
+#     Copyright 2014 by Konrad R.K. Ludwig.
 #
 #     This file is part of PodBlast.
 #
@@ -20,8 +20,9 @@
 #------------------------------------------------------------------------------#
 
 import gtkhandler
+# Captures a 'Ctrl+C' signal from the terminal:
 import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)    # Unix signal handler for Gtk.main() interrupt...
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 #------------------------------------------------------------------------------#
 

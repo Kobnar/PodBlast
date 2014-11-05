@@ -1,6 +1,6 @@
-#------------------------------------------------------------------------------#\
+#------------------------------------------------------------------------------#
 #
-#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
+#     Copyright 2014 by Konrad R.K. Ludwig.
 #
 #     This file is part of PodBlast.
 #
@@ -30,7 +30,7 @@ except:
 
 #------------------------------------------------------------------------------#
 
-class Player(object):
+class Stream(object):
     """
     An implementation to stream remote audio using GStreamer. Provides the
     necessary methods to set a stream's url and control playback.
@@ -74,19 +74,19 @@ class Player(object):
         else:
             self.engine.set_state(Gst.State.PLAYING)
             self.player_state = 'PLAYING'
-            print ('Player is now playing. (' + self.player_state + ')')
+            print ('Stream is now playing. (' + self.player_state + ')')
 
     # Pauses current playback (in-place):
     def pause (self):
         self.engine.set_state(Gst.State.PAUSED)
         self.player_state = 'PAUSED'
-        print ('Player is now paused. (' + self.player_state + ')')
+        print ('Stream is now paused. (' + self.player_state + ')')
 
     # Stops current playback (reset):
     def stop (self):
         self.engine.set_state(Gst.State.READY)
         self.player_state = 'READY'
-        print ('Player is now stopped. (' + self.player_state + ')')
+        print ('Stream is now stopped. (' + self.player_state + ')')
         self.set('NULL')
 
     # Nullifies the stream (for application shutdown):
@@ -94,4 +94,4 @@ class Player(object):
         self.engine.set_state(Gst.State.NULL)
         self.player_state = 'NULL'
         self.set('NULL')
-        print ('Player is nullified. (' + self.player_state + ')')
+        print ('Stream is nullified. (' + self.player_state + ')')

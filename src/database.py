@@ -1,6 +1,6 @@
-#------------------------------------------------------------------------------#\
+#------------------------------------------------------------------------------#
 #
-#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
+#     Copyright 2014 by Konrad R.K. Ludwig.
 #
 #     This file is part of PodBlast.
 #

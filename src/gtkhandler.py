@@ -1,6 +1,6 @@
-#------------------------------------------------------------------------------#\
+#------------------------------------------------------------------------------#
 #
-#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
+#     Copyright 2014 by Konrad R.K. Ludwig.
 #
 #     This file is part of PodBlast.
 #
@@ -33,10 +33,12 @@ import gtkinterface
 #------------------------------------------------------------------------------#
 
 class GTKHandler(object):
-
+    """
+    The link between the PodBlast front-end and the PodBlast back-end objects.
+    Takes signals from the front-end and syncronizes events with the back-end.
+    """
     def __init__(self):
         print ('Initializing GTK signal handler...')
-
         # Instantiates and connects GTK/Glade user interface component:
         self.pb = podblast.PodBlast()
         self.ux = gtkinterface.GTKInterface()
@@ -210,15 +212,15 @@ class GTKHandler(object):
     def refresh_player_buttons (self):
         state = self.pb.stream.player_state
         if self.pb.actv_feed_pkid == None:
-            self.ux.set_player_buttons_dead()
+            self.ux.set_player_buttons('DEAD')
         elif self.pb.actv_epsd_pkid != None:
             if state == 'NULL':
-                self.ux.set_player_buttons_null()
+                self.ux.set_player_buttons('NULL')
             elif state == 'READY':
-                self.ux.set_player_buttons_ready()
+                self.ux.set_player_buttons('READY')
             elif state == 'PAUSED':
-                self.ux.set_player_buttons_paused()
+                self.ux.set_player_buttons('PAUSED')
             elif state == 'PLAYING':
-                self.ux.set_player_buttons_playing()
+                self.ux.set_player_buttons('PLAYING')
         else:
-            self.ux.set_player_buttons_null()
+            self.ux.set_player_buttons('NULL')

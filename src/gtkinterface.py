@@ -1,6 +1,6 @@
-#------------------------------------------------------------------------------#\
+#------------------------------------------------------------------------------#
 #
-#     Copyright 2014 by Konrad R.K. Ludwig. All rights reserved.
+#     Copyright 2014 by Konrad R.K. Ludwig.
 #
 #     This file is part of PodBlast.
 #
@@ -30,13 +30,11 @@ except:
 
 class GTKInterface(object):
     """
-    An implementation to link the GTK/Glade user interface objects to the
-    PodBlast back-end along with certain methods to get and set user interface
-    data.
+    An implementation to link the GTK/Glade user interface objects to python and
+    provide a collection of methods to handle state changes.
     """
     def __init__(self):
         print ('Initializing GTK/Glade interface...')
-
         # Creates state trackers for user interface:
         self.actv_feed_pkid = None
         self.actv_epsd_pkid = None
@@ -105,7 +103,7 @@ class GTKInterface(object):
                 episode[1] = True
             else:
                 episode[1] = False
-
+ 
             # Bolds unheard podcasts:
             if episode[3] == True:
                 episode[4] = 700
@@ -155,55 +153,52 @@ class GTKInterface(object):
     #---------------- ----- --- --- - - - -  -     -
     # Setting th player GTK+ button "sensitivity" states:
 
-    def set_player_buttons_dead (self):
-        # print ('set_player_buttons_dead() called.')
-        self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
-        self.prev_button.set_sensitive(False)
-        # self.rwnd_button.set_sensitive(False)
-        self.play_button.set_sensitive(False)
-        self.stop_button.set_sensitive(False)
-        # self.ffwd_button.set_sensitive(False)
-        self.next_button.set_sensitive(False)
-
-    def set_player_buttons_null (self):
-        # print ('set_player_buttons_null() called.')
-        self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
-        self.prev_button.set_sensitive(False)
-        # self.rwnd_button.set_sensitive(False)
-        self.play_button.set_sensitive(True)
-        self.stop_button.set_sensitive(False)
-        # self.ffwd_button.set_sensitive(False)
-        self.next_button.set_sensitive(False)
-
-    def set_player_buttons_ready (self):
-        # print ('set_player_buttons_ready() called.')
-        self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
-        self.prev_button.set_sensitive(False)
-        # self.rwnd_button.set_sensitive(False)
-        self.play_button.set_sensitive(True)
-        self.stop_button.set_sensitive(False)
-        # self.ffwd_button.set_sensitive(False)
-        self.next_button.set_sensitive(False)
-
-    def set_player_buttons_paused (self):
-        # print ('set_player_buttons_paused() called.')
-        self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
-        self.prev_button.set_sensitive(True)
-        # self.rwnd_button.set_sensitive(True)
-        self.play_button.set_sensitive(True)
-        self.stop_button.set_sensitive(True)
-        # self.ffwd_button.set_sensitive(True)
-        self.next_button.set_sensitive(True)
-
-    def set_player_buttons_playing (self):
-        # print ('set_player_buttons_playing() called.')
-        self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PAUSE, 4)
-        self.prev_button.set_sensitive(True)
-        # self.rwnd_button.set_sensitive(True)
-        self.play_button.set_sensitive(True)
-        self.stop_button.set_sensitive(True)
-        # self.ffwd_button.set_sensitive(True)
-        self.next_button.set_sensitive(True)
+    def set_player_buttons (self, state):
+        if state == 'NULL':
+            # print ('set_player_buttons_null() called.')
+            self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
+            self.prev_button.set_sensitive(False)
+            # self.rwnd_button.set_sensitive(False)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(False)
+            # self.ffwd_button.set_sensitive(False)
+            self.next_button.set_sensitive(False)
+        elif state == 'READY':
+            # print ('set_player_buttons_ready() called.')
+            self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
+            self.prev_button.set_sensitive(False)
+            # self.rwnd_button.set_sensitive(False)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(False)
+            # self.ffwd_button.set_sensitive(False)
+            self.next_button.set_sensitive(False)
+        elif state == 'PLAY':
+            # print ('set_player_buttons_playing() called.')
+            self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PAUSE, 4)
+            self.prev_button.set_sensitive(True)
+            # self.rwnd_button.set_sensitive(True)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(True)
+            # self.ffwd_button.set_sensitive(True)
+            self.next_button.set_sensitive(True)
+        elif state == 'PAUSED':
+            # print ('set_player_buttons_paused() called.')
+            self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
+            self.prev_button.set_sensitive(True)
+            # self.rwnd_button.set_sensitive(True)
+            self.play_button.set_sensitive(True)
+            self.stop_button.set_sensitive(True)
+            # self.ffwd_button.set_sensitive(True)
+            self.next_button.set_sensitive(True)
+        else:
+            # print ('set_player_buttons_dead() called.')
+            self.play_image.set_from_stock(Gtk.STOCK_MEDIA_PLAY, 4)
+            self.prev_button.set_sensitive(False)
+            # self.rwnd_button.set_sensitive(False)
+            self.play_button.set_sensitive(False)
+            self.stop_button.set_sensitive(False)
+            # self.ffwd_button.set_sensitive(False)
+            self.next_button.set_sensitive(False)
 
     #---------------- ----- --- --- - - - -  -     -
     # Dialog windows:
