@@ -1,16 +1,38 @@
-core.db
+# Editor configuration files:
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files::
+*.DS_Store?
+ehthumbs.db
+[Ii]con?
+[Tt]humbs.db
+
+# Temp files:
 *~
-*.DS_Store
-bin/*
-*/bin/*
-static/*
-*/static/*
+~$*
+
+# Compiled sources:
 *.app
-*.exe
+*.com
+*.class
 *.dll
-*.pyc
-*.pdf
-*.dvi
+*.exe
+*.o
+*.so
+
+# Archives:
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.gz
+*.zip
+
+# Graphics:
 *.png
 *.jpg
 *.tiff
@@ -18,14 +40,34 @@ static/*
 *.ps
 *.jpeg
 *.xcf
-*.Rhistory
 *.dia
-*.gz
-*.tar
-*.tar.gz
-*.gz.tar
-*.zip
-*.7zip
-*.rar
-*.sublime-project
-*.sublime-workspace
+
+# Media:
+*.mp3
+*.mp4
+*.wav
+*.wma
+*.ogg
+
+# Documents:
+*.pdf
+*.doc
+*.docx
+*.dvi
+
+# Logs and Databases:
+*.log
+*.sqlite
+*.sql
+*.db
+
+# Miscellaneous:
+*.pyc
+*.Rhistory
+*.patch
+*.bak
+
+# Project specific extensions and masks:
+[Ee]nv/*
+*.log
+secret_*.py

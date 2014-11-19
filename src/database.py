@@ -49,6 +49,22 @@ class Episode(object):
         self.downloaded = episode_source.downloaded
         self.is_new = episode_source.is_new
 
+    def gen_cache(self):
+        episode_cache = {
+            'url' : self.url,
+            'title' : self.title,
+            'description' : self.description,
+            'media' : [],
+            'dtg_published' : pack_time(
+                self.dtg_published
+                ),
+            'downloaded' : self.downloaded,
+            'is_new' : self.is_new
+        }
+        for media in self.media:
+            episode_cache['media'].append(media)
+        return episode_cache
+
 
 class Feed(object):
     """
@@ -66,6 +82,19 @@ class Feed(object):
             self.episodes.append(Episode(episode_source))
         # Extracts feed metadata:
         self.valid = feed_source.valid
+
+    def gen_cache(self):
+        feed_cache = {
+            'url' : feed.url,
+            'title' : feed.title,
+            'description' : feed.description,
+            'episodes': [],
+            'valid' : feed.valid,
+            }
+        for episode in feed.episodes:
+            episode_cache = episode.gen_cache()
+            feed_cache['episodes'].append(episode_cache)
+        return feed_cache
 
 #------------------------------------------------------------------------------#
 #   The following three classes are designed to work around Python's single
@@ -192,32 +221,10 @@ class Database(object):
             data_cache = []
             for feed in self.feeds:
                 if feed.valid:
-                    feed_cache = {
-                        'url' : feed.url,
-                        'title' : feed.title,
-                        'description' : feed.description,
-                        'episodes': [],
-                        'valid' : feed.valid,
-                        }
-                    for episode in feed.episodes:
-                        episode_cache = {
-                            'url' : episode.url,
-                            'title' : episode.title,
-                            'description' : episode.description,
-                            'media' : [],
-                            'dtg_published' : pack_time(
-                                episode.dtg_published
-                                ),
-                            'downloaded' : episode.downloaded,
-                            'is_new' : episode.is_new
-                        }
-                        for media in episode.media:
-                            episode_cache['media'].append(media)
-                        feed_cache['episodes'].append(episode_cache)
+                    feed_cache = feed.gen_cache()
                     data_cache.append(feed_cache)
-
+            # Try to open 'JSON' database and save the cache to disk:
             try:
-                # Open 'JSON' database and save the cache to disk:
                 with open(file_path, 'w') as json_file:
                     json.dump(data_cache, json_file)
             except:
