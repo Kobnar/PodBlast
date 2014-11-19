@@ -132,7 +132,7 @@ class GTKInterface(object):
         for episode in self.episode_list:
             if episode[0] == self.actv_epsd_pkid:
                 print ('GTKInterface:\tMarking episode #'
-                    + str(self.actv_epsd_pkid) + 'as "old".')
+                    + str(self.actv_epsd_pkid) + ' as "old".')
                 episode[3] = False
 
     def get_feed_pkid (self):
