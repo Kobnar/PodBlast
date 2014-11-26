@@ -1,9 +1,9 @@
 # TO-DO:
 
- * Create "Add"/"Refresh"/"Configure" Podcast options
+ * Create "Refresh"/"Configure"/"Delete" Podcast options
  * Episode right clicks:
      - PLAY
      - DOWNLOAD
  * Keep track of currently playing episode when the feed is switched INSTEAD OF STOPPING
  * At the end of the current stream, start playing the next one on the playlist
- * Spinning wheel for internet connections..
+ * Spinning status wheel for internet connections..
