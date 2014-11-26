@@ -42,12 +42,13 @@ can see what is happening on the back-end in case anything goes wrong.
 
 ## Python Shell (Backend)
 
-The easiest way to run the PodBlast back-end is to instantiate an object in the
-Python shell and manipulate it via command line:
+The easiest way to run the PodBlast back-end is to instantiate an object in a
+Python 3 shell started from the ```/src/``` directory, and manipulate the
+streamer via command line:
 
 ```
 #!python
->>> from src.podblast import PodBlast
+>>> from podblast import PodBlast
 >>> feed_url = http://feeds.feedburner.com/mbmbam
 >>> blaster = PodBlast()                              # Instantiate PodBlast
 >>> blaster.register_feed(feed_url)                   # Fetch the feed data
