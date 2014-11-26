@@ -37,7 +37,7 @@ class PodBlast (database.Database):
         self.actv_feed_pkid = None
         self.actv_epsd_pkid = None
 
-        # Calls parent class constructors:
+        # Calls parent class constructor:
         database.Database.__init__(self)
 
         # Instantiates 'Stream' component object:
@@ -115,12 +115,15 @@ class PodBlast (database.Database):
         else:
             print ("PodBlast:\tAlready at the beginning of the current playlist.")
 
+    # Skips forward:
     def ffwd (self):
         self.stream.ffwd()
 
+    # Skips backward:
     def rwnd (self):
         self.stream.rwnd()
 
+    # Nullifies the stream (for thread-safe quitting):
     def null (self):
         self.set(None, None)
         self.stream.null()
@@ -135,11 +138,14 @@ class PodBlast (database.Database):
         for index, epsd in enumerate(self.feeds[actv_feed_pkid].episodes):
             print (index + ": " + epsd.title)
 
+    # Returns the player state (eg: 'PLAYING'):
     def get_player_state (self):
         return self.stream.player_state
 
+    # Gets the current stream position (in seconds):
     def get_position (self):
         return self.stream.get_position()
 
+    # Sets the current stream position (in seconds):
     def set_position (self, raw_seconds):
         self.stream.set_position(raw_seconds)

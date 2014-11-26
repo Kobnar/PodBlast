@@ -1,0 +1,24 @@
+## Compatibility Notes
+
+Due to the fact that PodBlast requires Python 3, certain compatibility issues
+exist. Of specific note is the workaround to remove 'drv_libxml2' from the
+preferred XML parsers list in 'FeedParser'. This should have no notable effect
+on PodCast's performance.
+
+## Development Notes
+
+For information about working with Python and GTK+ 3, check out the following
+tutorial:
+
+ * http://python-gtk-3-tutorial.readthedocs.org/en/latest/index.html
+
+Here are some valuable references:
+ * **Bold TreeView Rows:** http://stackoverflow.com/questions/8491310/bold-unbold-rows-in-pygtk-treeview
+ * **TreeView Signals:** http://www.pygtk.org/pygtk2tutorial/sec-TreeViewSignals.html
+ * **Gtk Dialogues:** http://python-gtk-3-tutorial.readthedocs.org/en/latest/dialogs.html
+ * **Gst.Element:** https://lazka.github.io/pgi-docs/Gst-1.0/classes/Element.html#Gst.Element.query_duration
+
+### Test Feeds
+
+MBMBaM: http://feeds.feedburner.com/mbmbam
+Radiolab: http://feeds.wnyc.org/radiolab

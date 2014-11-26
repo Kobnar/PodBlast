@@ -58,7 +58,7 @@ class Stream(object):
         self.player_state = 'NULL'
         self.channel_url = 'NULL'
 
-    # HAVE PODBLAST HANDLE THE MESSAGES!?!
+    # Handler is disabled for now because I don't need it.
     def gst_message_handler (self, bus, message):
         # if message.type == Gst.MessageType.STATE_CHANGED:
         #     old, new, pending = message.parse_state_changed()
@@ -104,11 +104,13 @@ class Stream(object):
         self.player_state = 'NULL'
         self.set('NULL')
 
+    # Skips forward 30 seconds.
     def ffwd (self):
         duration, position = self.get_position()
         position += 30
         self.set_position(position)
 
+    # Skips backward 30 seconds.
     def rwnd (self):
         duration, position = self.get_position()
         position -= 30
@@ -132,5 +134,6 @@ class Stream(object):
         # print ('Stream:\t\t[', position, ',', duration, ']')
         return (duration, position)
 
+    # Sets the feed to an arbitrary position (in seconds):
     def set_position (self, raw_seconds):
         self.engine.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, raw_seconds * Gst.SECOND)

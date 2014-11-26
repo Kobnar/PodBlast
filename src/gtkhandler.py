@@ -88,7 +88,7 @@ class GTKHandler(object):
         print('--------------------------- on_new -----------------------------')
         # Reset database:
         self.pb.feeds = []
-        self.pb.file_path = self.default_file_path
+        self.pb.file_path = self.pb.default_file_path
         self.set(None, None)
         # Refresh GUI:
         self.rebuild_feed_list()
@@ -201,7 +201,8 @@ class GTKHandler(object):
         self.pb.set_position(new_position)
 
     #---------------- ----- --- --- - - - -  -     -
-    # GUI timout loop for slider and controls:
+    # GUI timout loop to refresh slider and controls (stops the update to allow
+    # seeking via slider):
 
     def refresh_controls (self):
         # Gets position data from back-end:
@@ -217,7 +218,7 @@ class GTKHandler(object):
         return True
 
     #---------------- ----- --- --- - - - -  -     -
-    # Syncronizing front- and back-end components:
+    # Front- and back-end component synchronization:
 
     def sync_ux_state (self):
         print ('GTKHandler\tSyncronizing front-end state.')
@@ -225,6 +226,9 @@ class GTKHandler(object):
         self.ux.actv_epsd_pkid = self.pb.actv_epsd_pkid
         self.ux.player_state = self.pb.get_player_state()
         self.ux.actv_epsd_duration = self.pb.get_position()[1]
+
+    #---------------- ----- --- --- - - - -  -     -
+    # Player control connections:
 
     def set (self, feed_pkid, episode_pkid):
         print ('GTKHandler:\tSetting new PKID pair: [',
@@ -271,6 +275,8 @@ class GTKHandler(object):
     #---------------- ----- --- --- - - - -  -     -
     # GUI data population:
 
+    # Collects feed data from the PodBlast back-end and passes it to the GTK
+    # front-end so it can uprate the user interface.
     def rebuild_feed_list (self):
         if self.pb.feeds:
             feed_titles = []
@@ -280,6 +286,8 @@ class GTKHandler(object):
         else:
             self.ux.feed_list.clear()
 
+    # Collects episode data from the PodBlast back-end and passes it to the GTK
+    # front-end so it can uprate the user interface.
     def rebuild_episode_list (self):
         if self.ux.actv_feed_pkid != None:
             self.ux.episode_treeview.set_sensitive(True)
@@ -300,5 +308,6 @@ class GTKHandler(object):
             self.ux.episode_treeview.set_sensitive(False)
             self.ux.episode_list.clear()
 
+    # Does nothing right now.
     def refresh_time_scale (self):
         pass

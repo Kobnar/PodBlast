@@ -49,6 +49,7 @@ class Episode(object):
         self.downloaded = episode_source.downloaded
         self.is_new = episode_source.is_new
 
+    # Generates a JSON string for saving to data to disk:
     def gen_cache(self):
         episode_cache = {
             'url' : self.url,
@@ -83,15 +84,16 @@ class Feed(object):
         # Extracts feed metadata:
         self.valid = feed_source.valid
 
+    # Generates a JSON string for saving to data to disk:
     def gen_cache(self):
         feed_cache = {
-            'url' : feed.url,
-            'title' : feed.title,
-            'description' : feed.description,
+            'url' : self.url,
+            'title' : self.title,
+            'description' : self.description,
             'episodes': [],
-            'valid' : feed.valid,
+            'valid' : self.valid,
             }
-        for episode in feed.episodes:
+        for episode in self.episodes:
             episode_cache = episode.gen_cache()
             feed_cache['episodes'].append(episode_cache)
         return feed_cache
@@ -106,6 +108,7 @@ class LDEpisodeSource(object):
     """
     Translates data loaded from the program's 'JSON' formatted database so it
     can be passed to the 'Episode' class in a uniform matter.
+    (Used to workaround Python's single constructor limitation.)
     """
     def __init__(self, source):
         # Loads episode data:
@@ -123,6 +126,7 @@ class LDFeedSource(object):
     """
     Translates data loaded from the program's 'JSON' formatted database so it
     can be passed to the 'Feed' class in a uniform matter.
+    (Used to workaround Python's single constructor limitation.)
     """
     def __init__(self, source):
         # Loads feed data:
@@ -257,10 +261,12 @@ class Database(object):
         for feed in [search for search in self.feeds if search.url == feed_url]:
             self.feeds.remove(feed)
 
+    # Checks if an episode is new:
     def check_new(self, feed_pkid, episode_pkid):
         print ('Database:\tChecking if feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' is "new": ' + str(self.feeds[feed_pkid].episodes[episode_pkid].is_new))
         return self.feeds[feed_pkid].episodes[episode_pkid].is_new
 
+    # Marks an episode as old:
     def mark_old(self, feed_pkid, episode_pkid):
         print ('Database:\tMarking feed #' + str(feed_pkid) + ', episode #' + str(episode_pkid) + ' as "old".')
         self.feeds[feed_pkid].episodes[episode_pkid].is_new = False

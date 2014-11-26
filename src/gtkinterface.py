@@ -93,12 +93,14 @@ class GTKInterface(object):
         self.refresh_episode_list()
         self.refresh_player_buttons()
 
+    # Replaces the feed list with a new list:
     def rebuild_feed_list (self, feed_titles):
         # print ('rebuild_feed_list() called.')
         self.feed_list.clear()
         for feed_title in feed_titles:
             self.feed_list.append(feed_title)
 
+    # Replaces the episode list with a new list:
     def rebuild_episode_list (self, episode_input):
         # print ('rebuild_episode_list() called.')
         self.episode_list.clear()
@@ -108,6 +110,7 @@ class GTKInterface(object):
         # adjustment = self.episode_treeview.get_vadjustment()
         self.episode_treeview.scroll_to_cell(len(self.episode_list) - 1)
 
+    # Updates the front-end data to reflect the player state.
     def refresh_episode_list (self):
         print ('GTKInterface:\trefresh_episode_list() called.')
         for episode in self.episode_list:
@@ -127,6 +130,7 @@ class GTKInterface(object):
             else:
                 episode[4] = 400
 
+    # Un-bolds podcasts which have been played.
     def mark_old (self):
         # print ('GTKInterface:\tmark_old() called.')
         for episode in self.episode_list:
@@ -135,6 +139,7 @@ class GTKInterface(object):
                     + str(self.actv_epsd_pkid) + ' as "old".')
                 episode[3] = False
 
+    # Fetches the PKID of the currently selected feed.
     def get_feed_pkid (self):
         # print ('get_feed_pkid() called.')
         # feed_iter = self.feed_treeview.get_selection().get_selected()[1]
@@ -142,6 +147,7 @@ class GTKInterface(object):
         if feed_iter:
             return self.feed_list[feed_iter][0]
 
+    # Fetches the PKID of the currently selected episode.
     def get_epsd_pkid (self):
         # print ('get_epsd_pkid() called.')
         episode_iter = self.episode_treeview.get_selection().get_selected()[1]
@@ -149,7 +155,7 @@ class GTKInterface(object):
         return self.episode_list[episode_iter][0]
 
     #---------------- ----- --- --- - - - -  -     -
-    # Surrogate player controls:
+    # Surrogate player controls (update's ux state):
 
     def play_pause (self):
         if self.player_state is not 'PLAYING':
@@ -171,7 +177,7 @@ class GTKInterface(object):
         self.refresh_ux()
 
     #---------------- ----- --- --- - - - -  -     -
-    # Refreshing the time slider:
+    # Refreshing/setting the time slider and labels:
 
     def set_time_scale (self, position_data):
         duration, position = position_data
@@ -196,6 +202,8 @@ class GTKInterface(object):
     #---------------- ----- --- --- - - - -  -     -
     # Player GTK+ button "sensitivity" states:
 
+    # Updates the icons for the player controls (eg: cannot "play" if nothing
+    # is selected)
     def set_player_buttons (self, state = 'DEAD'):
         if state == 'NULL':
             # print ('set_player_buttons_null() called.')
@@ -243,24 +251,19 @@ class GTKInterface(object):
             self.ffwd_button.set_sensitive(False)
             self.next_button.set_sensitive(False)
 
+    # A logic stream dictating the ux vs. player states:
     def refresh_player_buttons (self):
         if self.actv_feed_pkid == None:
             self.set_player_buttons('DEAD')
         elif self.actv_epsd_pkid != None:
-            if self.player_state == 'NULL':
-                self.set_player_buttons('NULL')
-            elif self.player_state == 'READY':
-                self.set_player_buttons('READY')
-            elif self.player_state == 'PAUSED':
-                self.set_player_buttons('PAUSED')
-            elif self.player_state == 'PLAYING':
-                self.set_player_buttons('PLAYING')
+            self.set_player_buttons(self.player_state)
         else:
             self.set_player_buttons('NULL')
 
     #---------------- ----- --- --- - - - -  -     -
     # Dialog windows:
 
+    # A GTK error dialogue with a customizable message:
     def error_dialog (self, message):
         message_dialog = Gtk.MessageDialog(
             None, 
@@ -272,6 +275,7 @@ class GTKInterface(object):
         message_dialog.run()
         message_dialog.destroy()
 
+    # A GTK confirmation dialogue with a custom title and message:
     def confirm_dialog (self, title, message):
         message_dialog = Gtk.MessageDialog(
             None, 
@@ -291,6 +295,7 @@ class GTKInterface(object):
     def add_feed_show (self):
         self.add_feed_dialog.show()
 
+    # Gets the current "Add Feed" URL text:
     def get_add_feed_url (self):
         return self.add_feed_entry.get_text()
 
@@ -302,6 +307,7 @@ class GTKInterface(object):
     #---------------- ----- --- --- - - - -  -     -
     # Save/Load dialogues:
 
+    # A file-chooser to load a specific file:
     def load_dialog (self):
         file_chooser = Gtk.FileChooserDialog(
             "Open Database",    # Title
@@ -320,6 +326,7 @@ class GTKInterface(object):
             file_chooser.destroy()
             return None
 
+    # A file-chooser to save to a specific file:
     def save_dialog (self):
         file_chooser = Gtk.FileChooserDialog(
             "Open Database",    # Title
