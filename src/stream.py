@@ -27,6 +27,7 @@ try:
 except:
     print ("Error: Failed to load GStreamer bindings for Python.")
     sys.exit(1)
+from pbutils import validate_url
 
 #------------------------------------------------------------------------------#
 
@@ -37,7 +38,7 @@ class Stream(object):
     """
 
     def __init__(self):
-        print ('Initializing GStreamer interface.')
+        # print ('Initializing GStreamer interface.')
 
         # Instantiates the 'GStreamer' player 'engine' and defines the current
         #   output sink as 'pulseaudio':
@@ -69,37 +70,32 @@ class Stream(object):
         #     self.refresh_duration()
         pass
 
-    # Sets the current channel url:
+    # Sets the current channel_url to the input value if it is a valid url:
     def set (self, channel_url):
-        self.engine.set_property('uri', channel_url)
-        self.channel_url = channel_url
-        print ('Stream:\t\tStream URL set to "' + channel_url + '"')
+        if validate_url(channel_url):
+            self.engine.set_property('uri', channel_url)
+            self.channel_url = channel_url
+            # print ('Stream:\t\tStream URL set to "' + channel_url + '"')
 
-    # Begins streaming playback:
+    # Begins streaming playback if the URL is set:
     def play (self):
-        print ('Stream:\t\tplay()')
-        if self.channel_url is 'NULL':
-            print ('Stream:\t\tPlease set a media source before calling Stream.play().')
-        else:
+        if self.channel_url is not 'NULL':
             self.engine.set_state(Gst.State.PLAYING)
             self.player_state = 'PLAYING'
 
     # Pauses current playback (in-place):
     def pause (self):
-        print ('Stream:\tpause()')
         self.engine.set_state(Gst.State.PAUSED)
         self.player_state = 'PAUSED'
 
     # Stops current playback (reset):
     def stop (self):
-        print ('Stream:\t\tstop()')
         self.engine.set_state(Gst.State.READY)
         self.player_state = 'READY'
         self.set('NULL')
 
     # Nullifies the stream (for application shutdown):
     def null (self):
-        print ('Stream:\t\tnull()')
         self.engine.set_state(Gst.State.NULL)
         self.player_state = 'NULL'
         self.set('NULL')
